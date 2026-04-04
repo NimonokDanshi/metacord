@@ -1,28 +1,31 @@
 'use client';
 
 import { Application, extend } from '@pixi/react';
-import { Container, Graphics } from 'pixi.js';
-import { useRef } from 'react';
+import { Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { useRoom } from '@/hooks/useRoom';
 import Room from './Room';
+import Occupants from './Occupants';
 import { COLOR_BG, ROOM_WIDTH, ROOM_HEIGHT } from '@/constants/layout';
 
 // @pixi/react で使用するPixiJSクラスを登録する
-extend({ Container, Graphics });
+extend({ Container, Graphics, Text });
+
+// TODO: 将来的にDiscordのチャンネルIDを使って部屋を分離する
+const CHANNEL_NAME = 'main';
 
 /**
  * PixiJSのApplicationを初期化し、2D仮想空間を描画するメインキャンバス
- *
- * - Applicationは<canvas>要素をレンダリングし、
- *   childrenはPixiJSのstage上に描画される
- * - resizeToで親要素のサイズに追従する
- * - RoomコンポーネントがフロアやグリッドをGraphicsで描画する
+ * useRoom() で Supabase Presence を購読し、在室者の着席状態を管理する
  */
 export default function GameCanvas() {
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Supabase Realtime Presence の購読を開始（入室）
+  useRoom(CHANNEL_NAME);
+
+  const offsetX = typeof window !== 'undefined' ? Math.max(0, (window.innerWidth - ROOM_WIDTH) / 2) : 0;
+  const offsetY = typeof window !== 'undefined' ? Math.max(0, (window.innerHeight - ROOM_HEIGHT) / 2) : 0;
 
   return (
     <div
-      ref={containerRef}
       className="w-full h-full"
       style={{ background: `#${COLOR_BG.toString(16).padStart(6, '0')}` }}
     >
@@ -34,11 +37,11 @@ export default function GameCanvas() {
         autoDensity={true}
       >
         {/* 部屋の中央寄せコンテナ */}
-        <pixiContainer
-          x={typeof window !== 'undefined' ? Math.max(0, (window.innerWidth - ROOM_WIDTH) / 2) : 0}
-          y={typeof window !== 'undefined' ? Math.max(0, (window.innerHeight - ROOM_HEIGHT) / 2) : 0}
-        >
+        <pixiContainer x={offsetX} y={offsetY}>
+          {/* フロアタイル */}
           <Room />
+          {/* 在室者のアバター（着席位置に描画） */}
+          <Occupants />
         </pixiContainer>
       </Application>
     </div>
