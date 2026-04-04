@@ -11,27 +11,13 @@ import { GRID_COLS, GRID_ROWS } from '@/constants/layout';
 
 const MAX_SEATS = GRID_COLS * GRID_ROWS;
 
-/**
- * 空席の中から最小のseat_indexを返す
- * @param occupiedSeats 現在使用中のseat_indexの集合
- */
 function pickEmptySeat(occupiedSeats: Set<number>): number {
   for (let i = 0; i < MAX_SEATS; i++) {
     if (!occupiedSeats.has(i)) return i;
   }
-  // 满席の場合は末尾に追加（表示は重複するが、エラーを避ける）
   return MAX_SEATS;
 }
 
-/**
- * Supabase Realtime Presence を使って着席状態をリアルタイム同期するフック
- *
- * - Discordアクティビティに参加したユーザーが自動的に空き席に着席する
- * - 退出すると自動的に席が解放される（Supabaseの接続切断時にPresenceが自動削除される）
- * - 着席情報は Zustand の roomStore で管理し、PixiJSの描画に反映される
- *
- * @param channelName Supabaseチャンネル名（Discordのチャンネルキー等で分離）
- */
 export function useRoom(channelName: string) {
   const { user } = useDiscordStore();
   const {
@@ -45,6 +31,15 @@ export function useRoom(channelName: string) {
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
+    // Supabaseが未設定の場合は接続しない（コンソールに警告を出すだけ）
+    if (!supabase) {
+      console.warn(
+        '[useRoom] Supabase が未設定のため Presence 機能はスキップされます。\n' +
+        '環境変数 NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY を設定してください。'
+      );
+      return;
+    }
+
     // Discordユーザー情報が取得できるまで待機
     if (!user) return;
 
@@ -53,16 +48,10 @@ export function useRoom(channelName: string) {
     });
     channelRef.current = channel;
 
-    // --------------------------------------------------
-    // Presence: sync
-    // 自分を含む全員の現在の状態を受信する（チャンネル参加後 & 変化時）
-    // --------------------------------------------------
     channel.on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState<PresencePayload>();
       const next = new Map<string, SeatOccupant>();
-
       for (const [userId, presenceList] of Object.entries(state)) {
-        // 同一ユーザーが複数接続している場合は最初のエントリを使用
         const payload = presenceList[0] as PresencePayload;
         next.set(userId, {
           user_id: payload.user_id,
@@ -74,9 +63,6 @@ export function useRoom(channelName: string) {
       setOccupants(next);
     });
 
-    // --------------------------------------------------
-    // Presence: join（他のユーザーが入室した時）
-    // --------------------------------------------------
     channel.on('presence', { event: 'join' }, ({ newPresences }) => {
       for (const p of newPresences) {
         const payload = p as unknown as PresencePayload;
@@ -89,9 +75,6 @@ export function useRoom(channelName: string) {
       }
     });
 
-    // --------------------------------------------------
-    // Presence: leave（他のユーザーが退出した時）
-    // --------------------------------------------------
     channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
       for (const p of leftPresences) {
         const payload = p as unknown as PresencePayload;
@@ -99,19 +82,13 @@ export function useRoom(channelName: string) {
       }
     });
 
-    // --------------------------------------------------
-    // チャンネルを購読開始
-    // --------------------------------------------------
     channel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         setConnected(true);
-
-        // 現在の在室者から空席を選んで着席
         const occupiedSeats = getOccupiedSeats();
         const seatIndex = pickEmptySeat(occupiedSeats);
         setMySeatIndex(seatIndex);
 
-        // Presence に自分の情報をトラック
         const avatarUrl = user.avatar ? getDiscordAvatarUrl(user) : null;
         const payload: PresencePayload = {
           user_id: user.id,
@@ -124,20 +101,11 @@ export function useRoom(channelName: string) {
       }
     });
 
-    // アンマウント時にチャンネルを解除（着席が自動で解放される）
     return () => {
       setConnected(false);
       setMySeatIndex(null);
       channel.unsubscribe();
+      channelRef.current = null;
     };
-  }, [
-    user,
-    channelName,
-    setOccupants,
-    upsertOccupant,
-    removeOccupant,
-    setMySeatIndex,
-    setConnected,
-    getOccupiedSeats,
-  ]);
+  }, [user, channelName, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setConnected, getOccupiedSeats]);
 }
