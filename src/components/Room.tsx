@@ -8,17 +8,14 @@ import {
   TILE_H,
   GRID_COLS,
   GRID_ROWS,
+  ROOM_WIDTH,
+  ROOM_HEIGHT,
   COLOR_FLOOR_A,
   COLOR_FLOOR_B,
   COLOR_GRID,
   COLOR_WALL,
 } from '@/constants/layout';
 
-/**
- * 部屋の背景（フロア・壁）を描画するコンポーネント
- * useApplication()でPixiJSのappインスタンスを取得し、
- * Graphicsオブジェクトを直接stageに追加する
- */
 export default function Room() {
   const { app } = useApplication();
   const graphicsRef = useRef<Graphics | null>(null);
@@ -27,12 +24,15 @@ export default function Room() {
     const g = new Graphics();
     graphicsRef.current = g;
 
+    // app.screen でキャンバスの実際のサイズを取得して中央寄せ
+    const offsetX = Math.max(0, (app.screen.width - ROOM_WIDTH) / 2);
+    const offsetY = Math.max(0, (app.screen.height - ROOM_HEIGHT) / 2);
+
     // フロアタイルを描画（チェッカーパターン）
     for (let row = 0; row < GRID_ROWS; row++) {
       for (let col = 0; col < GRID_COLS; col++) {
-        const x = col * TILE_W;
-        const y = row * TILE_H;
-        // 市松模様にする
+        const x = offsetX + col * TILE_W;
+        const y = offsetY + row * TILE_H;
         const isEven = (row + col) % 2 === 0;
         const fillColor = isEven ? COLOR_FLOOR_A : COLOR_FLOOR_B;
 
@@ -44,13 +44,14 @@ export default function Room() {
     }
 
     // 上部の簡易的な壁（奥の壁）
-    g.rect(0, -32, TILE_W * GRID_COLS, 32).fill(COLOR_WALL);
+    g.rect(offsetX, offsetY - 32, TILE_W * GRID_COLS, 32).fill(COLOR_WALL);
 
     app.stage.addChildAt(g, 0); // 一番奥に追加
 
     return () => {
       app.stage.removeChild(g);
       g.destroy();
+      graphicsRef.current = null;
     };
   }, [app]);
 
