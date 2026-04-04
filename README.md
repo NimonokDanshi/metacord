@@ -48,3 +48,10 @@ npm run dev
 ## 設計ドキュメント
 
 プロジェクトのコンセプトやデータスキーマ等の詳細な設計・仕様については、ローカルの `document/` ディレクトリ配下にある各Markdownファイルをご参照ください。（※機密性のため、設計書は `.gitignore` によりGitHub上には公開されない設定となっています）
+
+## Discordアプリの設定
+
+1. Dveloper Portalでアプリを作成する(https://discord.com/developers/applications)
+2. Client InformationのアプリIDをversel上の環境変数NEXT_PUBLIC_DISCORD_CLIENT_IDに記載する
+3. URLマッピングにveselのURLを記載する
+4. 

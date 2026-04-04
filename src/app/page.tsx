@@ -1,4 +1,8 @@
-import DiscordProvider from "@/components/DiscordProvider";
+import dynamic from "next/dynamic";
+
+const DiscordProvider = dynamic(() => import("@/components/DiscordProvider"), {
+  ssr: false,
+});
 
 export default function Home() {
   return (
