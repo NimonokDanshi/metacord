@@ -11,7 +11,8 @@ export const discordSdk = new DiscordSDK(discordClientId);
  * window.fetch / WebSocket / XHR をモンキーパッチして URL を書き換える。
  */
 export function setupDiscordProxy() {
-  const target = supabaseUrl.replace(/^https?:\/\//, '');
+  // https:// などを除去し、ホスト名のみを抽出（末尾のスラッシュも除去）
+  const target = supabaseUrl.replace(/^https?:\/\//, '').split('/')[0];
   if (!target) return;
 
   patchUrlMappings([
