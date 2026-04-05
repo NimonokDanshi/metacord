@@ -42,7 +42,6 @@ export function VoxelMember({ occupant }: Props) {
       <Html
         position={[0, 1.2, 0]}
         center
-        distanceFactor={10}
         occlude={false}
         className="pointer-events-none select-none"
       >
