@@ -11,7 +11,7 @@ const isBrowser = typeof window !== 'undefined';
 const isLocal = isBrowser && window.location.hostname === 'localhost';
 
 const finalUrl = (isBrowser && !isLocal) 
-  ? '/supabase-rt' 
+  ? `${window.location.origin}/supabase-rt` 
   : supabaseUrl;
 
 /**
