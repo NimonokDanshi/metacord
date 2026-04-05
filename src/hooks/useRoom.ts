@@ -30,7 +30,6 @@ export function useRoom(channelName: string) {
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
-    // Supabaseが未設定の場合は接続しない（コンソールに警告を出すだけ）
     if (!supabase) {
       console.warn(
         '[useRoom] Supabase が未設定のため Presence 機能はスキップされます。\n' +
@@ -85,15 +84,12 @@ export function useRoom(channelName: string) {
       if (status === 'SUBSCRIBED') {
         setConnected(true);
 
-        // ★ 修正ポイント:
-        // SUBSCRIBED 時点で Zustand の occupants はまだ空の可能性がある。
-        // Zustand 経由ではなく channel.presenceState() から直接、
-        // 他ユーザーが使用中の席を取得する。
+        // ★ SUBSCRIBED 時点で Zustand の occupants はまだ空の可能性がある。
+        // channel.presenceState() から直接、他ユーザーの使用席を取得する。
         const currentState = channel.presenceState<PresencePayload>();
         const occupiedByOthers = new Set<number>();
         for (const [userId, presenceList] of Object.entries(currentState)) {
-          // 再接続時に自分の古いエントリが残る場合があるため自分は除外
-          if (userId === user.id) continue;
+          if (userId === user.id) continue; // 再接続時の自分の古いエントリを除外
           const payload = presenceList[0] as PresencePayload;
           if (typeof payload.seat_index === 'number') {
             occupiedByOthers.add(payload.seat_index);
@@ -121,10 +117,6 @@ export function useRoom(channelName: string) {
       channel.unsubscribe();
       channelRef.current = null;
     };
-  // ★ getOccupiedSeats を依存配列から除外:
-  //   Zustand の関数は参照が安定していないため、含めると
-  //   occupants が更新されるたびに useEffect が再実行され
-  //   無限再接続ループが発生する。
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, channelName, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setConnected]);
 }

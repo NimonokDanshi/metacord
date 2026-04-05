@@ -4,6 +4,27 @@ import { useEffect, useState } from 'react';
 import { discordSdk } from '@/lib/discord';
 import { useDiscordStore } from '@/store/discordStore';
 import { DiscordUser } from '@/types/discord';
+import { patchUrlMappings } from '@discord/embedded-app-sdk';
+
+/**
+ * Discord Activity のプロキシマッピング設定。
+ *
+ * Discord Activity は Discord のサンドボックス iframe 内で動作するため、
+ * 外部ドメイン（supabase.co）への接続は Discord の CSP によってブロックされる。
+ *
+ * patchUrlMappings() は window.fetch / window.WebSocket / XMLHttpRequest を
+ * モンキーパッチし、Supabase の URL を Discord プロキシ経由に自動書き換えする。
+ *
+ * ★ 事前に Discord Developer Portal の URL Mappings に以下を追加すること:
+ *   Prefix: /supabase-rt
+ *   Target: https://<あなたの project-ref>.supabase.co
+ */
+const URL_MAPPINGS = [
+  {
+    prefix: '/supabase-rt',
+    target: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+  },
+];
 
 export default function DiscordProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
@@ -20,18 +41,37 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
         // Step 1: Discordアプリ(iFrameの親)とのハンドシェイクを行う
         await discordSdk.ready();
 
-        // Step 2: Discord OAuth 認証を実施してアクセストークンを取得
+        // Step 2: Discord CSP 対策 — URL プロキシマッピングを適用
+        //
+        // patchUrlMappings() は window.fetch / window.WebSocket / XMLHttpRequest を
+        // グローバルにパッチし、Supabase への通信を自動的に
+        // https://xxxx.discordsays.com/supabase-rt/... 経由に書き換える。
+        //
+        // これにより Supabase クライアントの再初期化は不要で、
+        // 既存の `supabase` シングルトンがそのまま使える。
+        //
+        // ★ Developer Portal の URL Mappings に以下を追加してください:
+        //   Prefix: /supabase-rt
+        //   Target: https://<project-ref>.supabase.co
+        if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+          patchUrlMappings(URL_MAPPINGS, {
+            patchFetch: true,
+            patchWebSocket: true,
+            patchXhr: true,
+          });
+          console.log('[DiscordProvider] URL プロキシマッピングを適用しました。');
+        }
+
+        // Step 3: Discord OAuth 認証を実施してアクセストークンを取得
         const { code } = await discordSdk.commands.authorize({
           client_id: process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID,
           response_type: 'code',
           state: '',
           prompt: 'none',
-          // ユーザー識別に必要な最小スコープ
           scope: ['identify'],
         });
 
-        // Step 3: アクセストークンをサーバーサイド経由で取得
-        //   ※ client_secret を使うためサーバーAPI(/api/discord/token)を経由する
+        // Step 4: アクセストークンをサーバーサイド経由で取得
         const tokenResponse = await fetch('/api/discord/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -44,14 +84,14 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
 
         const { access_token } = await tokenResponse.json();
 
-        // Step 4: アクセストークンでSDKを認証し、ユーザー情報を取得
+        // Step 5: アクセストークンでSDKを認証し、ユーザー情報を取得
         const auth = await discordSdk.commands.authenticate({ access_token });
 
         if (!auth || !auth.user) {
           throw new Error('Discord認証に失敗しました。');
         }
 
-        // Step 5: 取得したユーザー情報をZustandストアに保存
+        // Step 6: 取得したユーザー情報をZustandストアに保存
         const discordUser: DiscordUser = {
           id: auth.user.id,
           username: auth.user.username,
@@ -96,6 +136,5 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
     );
   }
 
-  // 接続成功時は中身（アプリ画面本体）を描画する
   return <>{children}</>;
 }
