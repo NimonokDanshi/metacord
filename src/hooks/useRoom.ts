@@ -26,7 +26,6 @@ export function useRoom(channelName: string) {
     removeOccupant,
     setMySeatIndex,
     setConnected,
-    getOccupiedSeats,
   } = useRoomStore();
   const channelRef = useRef<RealtimeChannel | null>(null);
 
@@ -85,19 +84,34 @@ export function useRoom(channelName: string) {
     channel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         setConnected(true);
-        const occupiedSeats = getOccupiedSeats();
-        const seatIndex = pickEmptySeat(occupiedSeats);
+
+        // ★ 修正ポイント:
+        // SUBSCRIBED 時点で Zustand の occupants はまだ空の可能性がある。
+        // Zustand 経由ではなく channel.presenceState() から直接、
+        // 他ユーザーが使用中の席を取得する。
+        const currentState = channel.presenceState<PresencePayload>();
+        const occupiedByOthers = new Set<number>();
+        for (const [userId, presenceList] of Object.entries(currentState)) {
+          // 再接続時に自分の古いエントリが残る場合があるため自分は除外
+          if (userId === user.id) continue;
+          const payload = presenceList[0] as PresencePayload;
+          if (typeof payload.seat_index === 'number') {
+            occupiedByOthers.add(payload.seat_index);
+          }
+        }
+
+        const seatIndex = pickEmptySeat(occupiedByOthers);
         setMySeatIndex(seatIndex);
 
         const avatarUrl = user.avatar ? getDiscordAvatarUrl(user) : null;
-        const payload: PresencePayload = {
+        const presencePayload: PresencePayload = {
           user_id: user.id,
           display_name: user.global_name ?? user.username,
           avatar_url: avatarUrl,
           seat_index: seatIndex,
           joined_at: new Date().toISOString(),
         };
-        await channel.track(payload);
+        await channel.track(presencePayload);
       }
     });
 
@@ -107,5 +121,10 @@ export function useRoom(channelName: string) {
       channel.unsubscribe();
       channelRef.current = null;
     };
-  }, [user, channelName, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setConnected, getOccupiedSeats]);
+  // ★ getOccupiedSeats を依存配列から除外:
+  //   Zustand の関数は参照が安定していないため、含めると
+  //   occupants が更新されるたびに useEffect が再実行され
+  //   無限再接続ループが発生する。
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, channelName, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setConnected]);
 }
