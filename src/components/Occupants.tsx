@@ -30,6 +30,7 @@ function OccupantAvatar({ occupant, avatarUrl, offsetX, offsetY }: {
   // ボクセルアトラスからテクスチャを切り出し
   const chairTexture = useMemo(() => {
     const base = Texture.from(VOXEL_ATLAS_URL);
+    if (!base.source) return null;
     return new Texture({
       source: base.source,
       frame: new Rectangle(FRAME_CHAIR.x, FRAME_CHAIR.y, FRAME_CHAIR.width, FRAME_CHAIR.height),
@@ -38,6 +39,7 @@ function OccupantAvatar({ occupant, avatarUrl, offsetX, offsetY }: {
 
   const humanTexture = useMemo(() => {
     const base = Texture.from(VOXEL_ATLAS_URL);
+    if (!base.source) return null;
     return new Texture({
       source: base.source,
       frame: new Rectangle(FRAME_HUMAN_STAND.x, FRAME_HUMAN_STAND.y, FRAME_HUMAN_STAND.width, FRAME_HUMAN_STAND.height),
@@ -49,6 +51,8 @@ function OccupantAvatar({ occupant, avatarUrl, offsetX, offsetY }: {
     if (!avatarUrl) return null;
     return Texture.from(avatarUrl);
   }, [avatarUrl]);
+
+  if (!chairTexture || !humanTexture) return null;
 
   return (
     <pixiContainer x={x} y={y} zIndex={Z_INDEX_AVATARS + y}>

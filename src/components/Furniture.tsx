@@ -34,12 +34,15 @@ function FurnitureItem({ col, row, type }: FurnitureProps) {
   // アトラスからテクスチャを切り出し
   const texture = useMemo(() => {
     const base = Texture.from(VOXEL_ATLAS_URL);
+    if (!base.source) return null;
     const frame = type === 'desk' ? FRAME_DESK : FRAME_PLANT;
     return new Texture({
       source: base.source,
       frame: new Rectangle(frame.x, frame.y, frame.width, frame.height),
     });
   }, [type]);
+
+  if (!texture) return null;
 
   return (
     <pixiContainer x={x} y={y} zIndex={Z_INDEX_FURNITURE + y}>

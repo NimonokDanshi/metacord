@@ -20,11 +20,14 @@ export default function Room() {
   // ボクセルアトラスからタイルテクスチャを作成
   const tileTexture = useMemo(() => {
     const base = Texture.from(VOXEL_ATLAS_URL);
+    if (!base.source) return null;
     return new Texture({
       source: base.source,
       frame: new Rectangle(FRAME_TILE.x, FRAME_TILE.y, FRAME_TILE.width, FRAME_TILE.height),
     });
   }, []);
+
+  if (!tileTexture) return null;
 
   const offsetX = app.screen.width / 2;
   const offsetY = ORIGIN_Y;
