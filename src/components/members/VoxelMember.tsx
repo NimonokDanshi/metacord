@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { useVoxelGrid } from '@/hooks/useVoxelGrid';
-import { COLORS } from '@/constants/voxel';
+import { COLORS, HEIGHT_MEMBER_SITTING } from '@/constants/voxel';
 import type { SeatOccupant } from '@/types/room';
 
 interface Props {
@@ -15,12 +15,13 @@ export function VoxelMember({ occupant }: Props) {
   const groupRef = useRef<THREE.Group>(null);
 
   // 座席インデックスに基づいて 3D 座標を取得
-  const pos = getPositionFromSeat(occupant.seat_index, 0);
+  const pos = getPositionFromSeat(occupant.seat_index, HEIGHT_MEMBER_SITTING);
 
-  // 待機時の微少な浮遊アニメーション
+  // 待機時のアニメーション (着席時は控えめに)
   useFrame((state) => {
     if (groupRef.current) {
-      groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.05 + 0.5;
+      // わずかに呼吸しているような動き
+      groupRef.current.position.y = pos.y + Math.sin(state.clock.elapsedTime * 1.5) * 0.02;
     }
   });
 
