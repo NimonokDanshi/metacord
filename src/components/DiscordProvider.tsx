@@ -16,13 +16,23 @@ import { patchUrlMappings } from '@discord/embedded-app-sdk';
  * モンキーパッチし、Supabase の URL を Discord プロキシ経由に自動書き換えする。
  *
  * ★ 事前に Discord Developer Portal の URL Mappings に以下を追加すること:
- *   Prefix: /supabase-rt
- *   Target: https://<あなたの project-ref>.supabase.co
+ *   Prefix : /supabase-rt
+ *   Target : pzjnybdareiivemrlgqo.supabase.co  ← https:// を含めない！
+ *
+ * 公式ドキュメント: target はプロトコル（https://）を含めてはいけない。
+ * https://docs.discord.com/developers/activities/development-guides/local-development#prefix/target-formatting-rules
  */
+
+/** NEXT_PUBLIC_SUPABASE_URL から https:// / http:// を取り除いたホスト名のみを返す */
+function stripProtocol(url: string): string {
+  return url.replace(/^https?:\/\//, '');
+}
+
 const URL_MAPPINGS = [
   {
     prefix: '/supabase-rt',
-    target: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+    // ★ target にはプロトコル不要（公式仕様）
+    target: stripProtocol(process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''),
   },
 ];
 
