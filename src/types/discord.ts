@@ -17,6 +17,7 @@ export function getDiscordAvatarUrl(user: DiscordUser, size: number = 128): stri
     return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=${size}`;
   }
   // アバター未設定の場合はデフォルト画像
-  const defaultAvatarIndex = Number(user.discriminator) % 5;
+  // 公式推奨: (BigInt(user.id) >> 22n) % 6n
+  const defaultAvatarIndex = (BigInt(user.id) >> 22n) % 6n;
   return `https://cdn.discordapp.com/embed/avatars/${defaultAvatarIndex}.png`;
 }

@@ -18,8 +18,8 @@ function pickEmptySeat(occupiedSeats: Set<number>): number {
   return MAX_SEATS;
 }
 
-export function useRoom(channelName: string) {
-  const { user } = useDiscordStore();
+export function useRoom() {
+  const { user, instanceId } = useDiscordStore();
   const {
     setOccupants,
     upsertOccupant,
@@ -38,10 +38,10 @@ export function useRoom(channelName: string) {
       return;
     }
 
-    // Discordユーザー情報が取得できるまで待機
-    if (!user) return;
+    // Discordユーザー情報とインスタンスIDが取得できるまで待機
+    if (!user || !instanceId) return;
 
-    const channel = supabase.channel(`room:${channelName}`, {
+    const channel = supabase.channel(`room:${instanceId}`, {
       config: { presence: { key: user.id } },
     });
     channelRef.current = channel;
@@ -99,10 +99,12 @@ export function useRoom(channelName: string) {
         const seatIndex = pickEmptySeat(occupiedByOthers);
         setMySeatIndex(seatIndex);
 
-        const avatarUrl = user.avatar ? getDiscordAvatarUrl(user) : null;
+        const avatarUrl = getDiscordAvatarUrl(user);
+        const displayName = user.global_name ?? (user.discriminator !== '0' ? `${user.username}#${user.discriminator}` : user.username);
+
         const presencePayload: PresencePayload = {
           user_id: user.id,
-          display_name: user.global_name ?? user.username,
+          display_name: displayName,
           avatar_url: avatarUrl,
           seat_index: seatIndex,
           joined_at: new Date().toISOString(),
@@ -117,6 +119,5 @@ export function useRoom(channelName: string) {
       channel.unsubscribe();
       channelRef.current = null;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, channelName, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setConnected]);
+  }, [user, instanceId, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setConnected]);
 }

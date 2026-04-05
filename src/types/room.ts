@@ -25,9 +25,4 @@ export interface PresencePayload {
 /**
  * アプリ内で管理する着席情報（Presenceから変換済み）
  */
-export interface SeatOccupant {
-  user_id: string;
-  display_name: string;
-  avatar_url: string | null;
-  seat_index: number;
-}
+export type SeatOccupant = Omit<PresencePayload, 'joined_at'>;

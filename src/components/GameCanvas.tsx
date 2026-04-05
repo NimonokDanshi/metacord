@@ -10,16 +10,8 @@ import { COLOR_BG } from '@/constants/layout';
 // @pixi/react で使用するPixiJSクラスを登録する
 extend({ Container, Graphics, Text });
 
-const CHANNEL_NAME = 'main';
-
-/**
- * PixiJSのApplicationを初期化し、2D仮想空間を描画するメインキャンバス
- * - useRoom() で Supabase Presence を購読し、在室者の着席状態を管理する
- * - Room / Occupants は useApplication() 経由で app.screen を参照し、
- *   自前で中央寄せ座標を計算する（JSX pixiContainer のオフセットは使用しない）
- */
 export default function GameCanvas() {
-  useRoom(CHANNEL_NAME);
+  useRoom();
 
   return (
     <div
