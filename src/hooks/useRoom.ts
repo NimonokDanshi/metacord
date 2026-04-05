@@ -7,9 +7,9 @@ import { useDiscordStore } from '@/store/discordStore';
 import { useRoomStore } from '@/store/roomStore';
 import type { PresencePayload, SeatOccupant } from '@/types/room';
 import { getDiscordAvatarUrl } from '@/types/discord';
-import { GRID_COLS, GRID_ROWS } from '@/constants/layout';
+import { GRID_SIZE_X, GRID_SIZE_Z } from '@/constants/voxel';
 
-const MAX_SEATS = GRID_COLS * GRID_ROWS;
+const MAX_SEATS = GRID_SIZE_X * GRID_SIZE_Z;
 
 function pickEmptySeat(occupiedSeats: Set<number>): number {
   for (let i = 0; i < MAX_SEATS; i++) {
