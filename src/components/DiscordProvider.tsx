@@ -16,11 +16,22 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
     async function setupDiscord() {
       try {
         if (!process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID) {
-          throw new Error("環境変数 `NEXT_PUBLIC_DISCORD_CLIENT_ID` が設定されていません。");
+          throw new Error('環境変数 NEXT_PUBLIC_DISCORD_CLIENT_ID が設定されていません。');
+        }
+
+        if (!discordSdk) {
+          throw new Error('Discord 外のブラウザで起動されています。Discord ボイスチャンネルの『ロケットボタン』から起動してください。');
         }
 
         // Step 1: Discordアプリ(iFrameの親)とのハンドシェイクを行う
+        console.log('[DiscordProvider] SDK の準備を開始します...');
         await discordSdk.ready();
+
+        console.log('[DiscordProvider] SDK Ready!', {
+          instanceId: discordSdk.instanceId,
+          channelId: discordSdk.channelId,
+          guildId: discordSdk.guildId,
+        });
 
         // Step 2: Discord CSP 対策 — URL プロキシマッピングを適用
         setupDiscordProxy();
@@ -34,6 +45,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
         });
 
         // Step 4: Discord OAuth 認証を実施してアクセストークンを取得
+        console.log('[DiscordProvider] 認可コードを取得中...');
         const { code } = await discordSdk.commands.authorize({
           client_id: process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID,
           response_type: 'code',
@@ -43,6 +55,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
         });
 
         // Step 5: アクセストークンをサーバーサイド経由で取得
+        console.log('[DiscordProvider] トークン交換中...', { code: code.substring(0, 5) + '...' });
         const tokenResponse = await fetch('/api/discord/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -50,17 +63,22 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
         });
 
         if (!tokenResponse.ok) {
-          throw new Error('アクセストークンの取得に失敗しました。');
+          const errText = await tokenResponse.text();
+          console.error('[DiscordProvider] トークン取得エラー:', errText);
+          throw new Error(`アクセストークンの取得に失敗しました: ${tokenResponse.status}`);
         }
 
         const { access_token } = await tokenResponse.json();
 
         // Step 6: アクセストークンでSDKを認証し、ユーザー情報を取得
+        console.log('[DiscordProvider] SDK を認証中...');
         const auth = await discordSdk.commands.authenticate({ access_token });
 
         if (!auth || !auth.user) {
           throw new Error('Discord認証に失敗しました。');
         }
+
+        console.log('[DiscordProvider] 認証成功:', auth.user.username);
 
         // Step 7: 取得したユーザー情報をZustandストアに保存
         const discordUser: DiscordUser = {
@@ -73,9 +91,9 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
         setUser(discordUser);
         setReady(true);
         setIsConnected(true);
-
       } catch (e: any) {
-        setError(e.message || "Discordへの接続に失敗しました（またはDiscord以外のブラウザで表示しています）");
+        console.error('[DiscordProvider] Error:', e);
+        setError(e.message || 'Discordへの接続に失敗しました。');
       }
     }
 

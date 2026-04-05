@@ -19,7 +19,7 @@ function pickEmptySeat(occupiedSeats: Set<number>): number {
 }
 
 export function useRoom() {
-  const { user, instanceId } = useDiscordStore();
+  const { user, instanceId, channelId } = useDiscordStore();
   const {
     setOccupants,
     upsertOccupant,
@@ -38,16 +38,21 @@ export function useRoom() {
       return;
     }
 
-    // Discordユーザー情報とインスタンスIDが取得できるまで待機
-    if (!user || !instanceId) return;
+    // Discordユーザー情報とチャンネルID（またはインスタンスID）が取得できるまで待機
+    if (!user || (!channelId && !instanceId)) return;
 
-    const channel = supabase.channel(`room:${instanceId}`, {
+    // ボイスチャンネルIDを優先して使用。これにより「参加」経由でなくても同じチャンネルにいれば同期される。
+    const roomKey = channelId ? `room:${channelId}` : `room:${instanceId}`;
+    console.log(`[useRoom] ルームへの接続を試みます: ${roomKey} (User: ${user.id})`);
+
+    const channel = supabase.channel(roomKey, {
       config: { presence: { key: user.id } },
     });
     channelRef.current = channel;
 
     channel.on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState<PresencePayload>();
+      console.log('[useRoom] Presence Sync 発生:', state);
       const next = new Map<string, SeatOccupant>();
       for (const [userId, presenceList] of Object.entries(state)) {
         const payload = presenceList[0] as PresencePayload;
@@ -62,6 +67,7 @@ export function useRoom() {
     });
 
     channel.on('presence', { event: 'join' }, ({ newPresences }) => {
+      console.log('[useRoom] User Joined:', newPresences);
       for (const p of newPresences) {
         const payload = p as unknown as PresencePayload;
         upsertOccupant({
@@ -74,6 +80,7 @@ export function useRoom() {
     });
 
     channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
+      console.log('[useRoom] User Left:', leftPresences);
       for (const p of leftPresences) {
         const payload = p as unknown as PresencePayload;
         removeOccupant(payload.user_id);
@@ -81,15 +88,20 @@ export function useRoom() {
     });
 
     channel.subscribe(async (status) => {
+      console.log(`[useRoom] サブスクリプションステータス: ${status}`);
+      
+      if (status === 'CHANNEL_ERROR') {
+        console.error('[useRoom] チャンネルエラー。URLマッピングの設定やネットワーク制限を確認してください。');
+      }
+
       if (status === 'SUBSCRIBED') {
         setConnected(true);
+        console.log('[useRoom] 接続成功！トラックを開始します。');
 
-        // ★ SUBSCRIBED 時点で Zustand の occupants はまだ空の可能性がある。
-        // channel.presenceState() から直接、他ユーザーの使用席を取得する。
         const currentState = channel.presenceState<PresencePayload>();
         const occupiedByOthers = new Set<number>();
         for (const [userId, presenceList] of Object.entries(currentState)) {
-          if (userId === user.id) continue; // 再接続時の自分の古いエントリを除外
+          if (userId === user.id) continue;
           const payload = presenceList[0] as PresencePayload;
           if (typeof payload.seat_index === 'number') {
             occupiedByOthers.add(payload.seat_index);
@@ -109,7 +121,9 @@ export function useRoom() {
           seat_index: seatIndex,
           joined_at: new Date().toISOString(),
         };
-        await channel.track(presencePayload);
+        
+        const trackResult = await channel.track(presencePayload);
+        console.log('[useRoom] トラック結果:', trackResult);
       }
     });
 
@@ -119,5 +133,5 @@ export function useRoom() {
       channel.unsubscribe();
       channelRef.current = null;
     };
-  }, [user, instanceId, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setConnected]);
+  }, [user, instanceId, channelId, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setConnected]);
 }

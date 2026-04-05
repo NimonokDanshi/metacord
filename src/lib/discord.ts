@@ -3,8 +3,14 @@ import { DiscordSDK, patchUrlMappings } from '@discord/embedded-app-sdk';
 const discordClientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 
-// クライアント側で一意のインスタンスを作成します
-export const discordSdk = new DiscordSDK(discordClientId);
+// ブラウザ環境かつ、frame_id が URL パラメータに存在するかチェック
+// Discord Activity 外（普通のブラウザなど）で起動した場合のクラッシュを防ぐ
+const isBrowser = typeof window !== 'undefined';
+const hasFrameId = isBrowser && new URLSearchParams(window.location.search).has('frame_id');
+
+export const discordSdk = (isBrowser && hasFrameId)
+    ? new DiscordSDK(discordClientId)
+    : null;
 
 /**
  * Discord Activity のプロキシ設定（CSP対策）
