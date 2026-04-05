@@ -1,14 +1,15 @@
 'use client';
 
 import { Application, extend } from '@pixi/react';
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics, Text, Sprite, Texture } from 'pixi.js';
 import { useRoom } from '@/hooks/useRoom';
 import Room from './Room';
+import Furniture from './Furniture';
 import Occupants from './Occupants';
 import { COLOR_BG } from '@/constants/layout';
 
 // @pixi/react で使用するPixiJSクラスを登録する
-extend({ Container, Graphics, Text });
+extend({ Container, Graphics, Text, Sprite, Texture });
 
 export default function GameCanvas() {
   useRoom();
@@ -27,6 +28,7 @@ export default function GameCanvas() {
       >
         {/* Room・Occupantsは useApplication() 経由で app.stage に直接描画する */}
         <Room />
+        <Furniture />
         <Occupants />
       </Application>
     </div>

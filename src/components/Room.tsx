@@ -1,59 +1,52 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useMemo } from 'react';
 import { useApplication } from '@pixi/react';
-import { Graphics } from 'pixi.js';
+import { Texture, Rectangle } from 'pixi.js';
+import { gridToScreen } from '@/lib/isometric';
 import {
-  TILE_W,
-  TILE_H,
+  ISO_TILE_W,
+  ISO_TILE_H,
   GRID_COLS,
   GRID_ROWS,
-  ROOM_WIDTH,
-  ROOM_HEIGHT,
-  COLOR_FLOOR_A,
-  COLOR_FLOOR_B,
-  COLOR_GRID,
-  COLOR_WALL,
+  VOXEL_ATLAS_URL,
+  FRAME_TILE,
+  ORIGIN_Y,
 } from '@/constants/layout';
 
 export default function Room() {
   const { app } = useApplication();
-  const graphicsRef = useRef<Graphics | null>(null);
 
-  useEffect(() => {
-    const g = new Graphics();
-    graphicsRef.current = g;
+  // ボクセルアトラスからタイルテクスチャを作成
+  const tileTexture = useMemo(() => {
+    const base = Texture.from(VOXEL_ATLAS_URL);
+    return new Texture({
+      source: base.source,
+      frame: new Rectangle(FRAME_TILE.x, FRAME_TILE.y, FRAME_TILE.width, FRAME_TILE.height),
+    });
+  }, []);
 
-    // app.screen でキャンバスの実際のサイズを取得して中央寄せ
-    const offsetX = Math.max(0, (app.screen.width - ROOM_WIDTH) / 2);
-    const offsetY = Math.max(0, (app.screen.height - ROOM_HEIGHT) / 2);
+  const offsetX = app.screen.width / 2;
+  const offsetY = ORIGIN_Y;
 
-    // フロアタイルを描画（チェッカーパターン）
-    for (let row = 0; row < GRID_ROWS; row++) {
-      for (let col = 0; col < GRID_COLS; col++) {
-        const x = offsetX + col * TILE_W;
-        const y = offsetY + row * TILE_H;
-        const isEven = (row + col) % 2 === 0;
-        const fillColor = isEven ? COLOR_FLOOR_A : COLOR_FLOOR_B;
-
-        // タイル本体
-        g.rect(x + 1, y + 1, TILE_W - 2, TILE_H - 2).fill(fillColor);
-        // グリッドライン
-        g.rect(x, y, TILE_W, TILE_H).stroke({ width: 1, color: COLOR_GRID, alpha: 0.6 });
-      }
-    }
-
-    // 上部の簡易的な壁（奥の壁）
-    g.rect(offsetX, offsetY - 32, TILE_W * GRID_COLS, 32).fill(COLOR_WALL);
-
-    app.stage.addChildAt(g, 0); // 一番奥に追加
-
-    return () => {
-      app.stage.removeChild(g);
-      g.destroy();
-      graphicsRef.current = null;
-    };
-  }, [app]);
-
-  return null;
+  return (
+    <>
+      {Array.from({ length: GRID_ROWS }).map((_, row) =>
+        Array.from({ length: GRID_COLS }).map((_, col) => {
+          const { x, y } = gridToScreen(col, row, ISO_TILE_W, ISO_TILE_H, offsetX, offsetY);
+          return (
+            <pixiSprite
+              key={`${col}-${row}`}
+              texture={tileTexture}
+              x={x}
+              y={y}
+              width={ISO_TILE_W + 2} // 隙間を埋めるための微調整
+              height={ISO_TILE_W + 2} // アトラス内のタイル形状に合わせて調整
+              anchor={0.5}
+            />
+          );
+        })
+      )}
+    </>
+  );
 }

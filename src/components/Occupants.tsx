@@ -1,108 +1,126 @@
-'use client';
-
-import { useEffect, useRef } from 'react';
-import { Graphics, Text, TextStyle } from 'pixi.js';
+import { useMemo } from 'react';
+import { Texture, Rectangle, TextStyle, Graphics as PixiGraphics } from 'pixi.js';
 import { useApplication } from '@pixi/react';
 import { useRoomStore } from '@/store/roomStore';
 import { useDiscordStore } from '@/store/discordStore';
-import { TILE_W, TILE_H, GRID_COLS, ROOM_WIDTH, ROOM_HEIGHT } from '@/constants/layout';
+import { gridToScreen } from '@/lib/isometric';
+import { getDiscordAvatarUrl } from '@/types/discord';
+import {
+  ISO_TILE_W,
+  ISO_TILE_H,
+  GRID_COLS,
+  ORIGIN_Y,
+  Z_INDEX_AVATARS,
+  VOXEL_ATLAS_URL,
+  FRAME_CHAIR,
+  FRAME_HUMAN_STAND,
+  Z_INDEX_AUTOSITTING_CHAIR,
+} from '@/constants/layout';
 
-const AVATAR_RADIUS = 20;
-const COLOR_SELF = 0x60a5fa;   // 自分：青
-const COLOR_OTHER = 0xa3e635;  // 他者：緑
-
-function seatIndexToXY(
-  seatIndex: number,
+function OccupantAvatar({ occupant, avatarUrl, offsetX, offsetY }: { 
+  occupant: any, 
+  avatarUrl?: string,
   offsetX: number,
   offsetY: number
-): { x: number; y: number } {
-  const col = seatIndex % GRID_COLS;
-  const row = Math.floor(seatIndex / GRID_COLS);
-  return {
-    x: offsetX + col * TILE_W + TILE_W / 2,
-    y: offsetY + row * TILE_H + TILE_H / 2,
-  };
+}) {
+  const col = occupant.seat_index % GRID_COLS;
+  const row = Math.floor(occupant.seat_index / GRID_COLS);
+  const { x, y } = useMemo(() => gridToScreen(col, row, ISO_TILE_W, ISO_TILE_H, offsetX, offsetY), [col, row, offsetX, offsetY]);
+
+  // ボクセルアトラスからテクスチャを切り出し
+  const chairTexture = useMemo(() => {
+    const base = Texture.from(VOXEL_ATLAS_URL);
+    return new Texture({
+      source: base.source,
+      frame: new Rectangle(FRAME_CHAIR.x, FRAME_CHAIR.y, FRAME_CHAIR.width, FRAME_CHAIR.height),
+    });
+  }, []);
+
+  const humanTexture = useMemo(() => {
+    const base = Texture.from(VOXEL_ATLAS_URL);
+    return new Texture({
+      source: base.source,
+      frame: new Rectangle(FRAME_HUMAN_STAND.x, FRAME_HUMAN_STAND.y, FRAME_HUMAN_STAND.width, FRAME_HUMAN_STAND.height),
+    });
+  }, []);
+
+  // アバターテクスチャ
+  const avatarTexture = useMemo(() => {
+    if (!avatarUrl) return null;
+    return Texture.from(avatarUrl);
+  }, [avatarUrl]);
+
+  return (
+    <pixiContainer x={x} y={y} zIndex={Z_INDEX_AVATARS + y}>
+      {/* 椅子 */}
+      <pixiSprite
+        texture={chairTexture}
+        anchor={{ x: 0.5, y: 0.9 }}
+        scale={0.45}
+        zIndex={Z_INDEX_AUTOSITTING_CHAIR}
+      />
+      
+      {/* ボクセル人型キャラ */}
+      <pixiSprite
+        texture={humanTexture}
+        anchor={{ x: 0.5, y: 1.0 }}
+        scale={0.45}
+        y={-5}
+      />
+
+      {/* Discord アイコンを頭上に表示 (Identity) */}
+      {avatarUrl && avatarTexture && (
+        <pixiContainer y={-60}>
+            <pixiSprite
+                texture={avatarTexture}
+                anchor={0.5}
+                width={20}
+                height={20}
+                mask={new PixiGraphics().circle(0, 0, 10).fill(0xffffff)}
+            />
+            <pixiGraphics
+              draw={(g: PixiGraphics) => {
+                g.clear().circle(0, 0, 11).stroke({ color: 0xffffff, width: 2 });
+              }}
+            />
+        </pixiContainer>
+      )}
+
+      {/* ユーザー名 */}
+      <pixiText
+        text={occupant.display_name}
+        anchor={0.5}
+        y={15}
+        style={new TextStyle({
+          fontSize: 11,
+          fill: 0xffffff,
+          fontWeight: 'bold',
+          stroke: { color: 0x000000, width: 3 }
+        })}
+      />
+    </pixiContainer>
+  );
 }
 
 export default function Occupants() {
   const { app } = useApplication();
   const { user: myUser } = useDiscordStore();
   const { occupants } = useRoomStore();
-  const graphicsRef = useRef<Graphics | null>(null);
-  const labelsRef = useRef<Text[]>([]);
 
-  useEffect(() => {
-    // 前フレームの描画物を安全にクリア
-    if (graphicsRef.current && !graphicsRef.current.destroyed) {
-      app.stage.removeChild(graphicsRef.current);
-      graphicsRef.current.destroy();
-      graphicsRef.current = null;
-    }
-    labelsRef.current.forEach((t) => {
-      if (!t.destroyed) {
-        app.stage.removeChild(t);
-        t.destroy();
-      }
-    });
-    labelsRef.current = [];
+  const offsetX = app.screen.width / 2;
+  const offsetY = ORIGIN_Y;
 
-    // 在室者がいない場合はスキップ
-    if (occupants.size === 0) return;
-
-    // app.screen でキャンバスの実際のサイズを取得して中央寄せ
-    const offsetX = Math.max(0, (app.screen.width - ROOM_WIDTH) / 2);
-    const offsetY = Math.max(0, (app.screen.height - ROOM_HEIGHT) / 2);
-
-    const g = new Graphics();
-    graphicsRef.current = g;
-    // フロア(index:0)の上に重ねる
-    app.stage.addChildAt(g, Math.min(1, app.stage.children.length));
-
-    const texts: Text[] = [];
-
-    for (const occupant of occupants.values()) {
-      const { x, y } = seatIndexToXY(occupant.seat_index, offsetX, offsetY);
-      const isSelf = occupant.user_id === myUser?.id;
-      const color = isSelf ? COLOR_SELF : COLOR_OTHER;
-
-      // アバター円（仮実装 → 将来スプライト化）
-      g.circle(x, y, AVATAR_RADIUS).fill({ color, alpha: 0.85 });
-      g.circle(x, y, AVATAR_RADIUS).stroke({ color: 0xffffff, width: 1.5, alpha: 0.5 });
-
-      // ユーザー名ラベル
-      const label = new Text({
-        text: occupant.display_name,
-        style: new TextStyle({
-          fontSize: 10,
-          fill: 0xffffff,
-          align: 'center',
-          fontFamily: 'sans-serif',
-        }),
-      });
-      label.anchor.set(0.5, 0);
-      label.x = x;
-      label.y = y + AVATAR_RADIUS + 3;
-      app.stage.addChild(label);
-      texts.push(label);
-    }
-
-    labelsRef.current = texts;
-
-    return () => {
-      if (!g.destroyed) {
-        app.stage.removeChild(g);
-        g.destroy();
-      }
-      texts.forEach((t) => {
-        if (!t.destroyed) {
-          app.stage.removeChild(t);
-          t.destroy();
-        }
-      });
-      graphicsRef.current = null;
-      labelsRef.current = [];
-    };
-  }, [app, occupants, myUser]);
-
-  return null;
+  return (
+    <>
+      {Array.from(occupants.values()).map((occupant) => (
+        <OccupantAvatar
+          key={occupant.user_id}
+          occupant={occupant}
+          avatarUrl={occupant.user_id === myUser?.id && myUser ? getDiscordAvatarUrl(myUser) : undefined}
+          offsetX={offsetX}
+          offsetY={offsetY}
+        />
+      ))}
+    </>
+  );
 }
