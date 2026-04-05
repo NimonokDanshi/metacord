@@ -43,8 +43,7 @@ export default function Room() {
               texture={tileTexture}
               x={x}
               y={y}
-              width={ISO_TILE_W + 2} // 隙間を埋めるための微調整
-              height={ISO_TILE_W + 2} // アトラス内のタイル形状に合わせて調整
+              scale={0.25} // 256px -> 64px (ISO_TILE_W)
               anchor={0.5}
             />
           );

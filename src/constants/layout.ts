@@ -61,7 +61,7 @@ export const Z_INDEX_AUTOSITTING_CHAIR = 80; // キャラの真下
 export const Z_INDEX_UI = 1000;
 
 // =============================================
-// Voxel Atlas 座標設定 (1024x1024 / 5x4 grid approx 205px per cell)
+// Voxel Atlas 座標設定 (1024x1024 / 4x4 grid, 256px per cell)
 // =============================================
 
 export const VOXEL_ATLAS_URL = '/assets/voxel_atlas.png';
@@ -74,20 +74,21 @@ export interface SpriteFrame {
   height: number;
 }
 
-const CELL_H = 204.8;
-const CELL_W = 256;
+// グリッド線(黒)を避けるためのオフセット
+const PAD = 2;
+const CELL = 256;
 
 /** 床タイル (Row 0, Col 0) */
-export const FRAME_TILE: SpriteFrame = { x: 0, y: 0, width: CELL_W, height: CELL_H };
+export const FRAME_TILE: SpriteFrame = { x: 0 + PAD, y: 0 + PAD, width: CELL - PAD*2, height: CELL - PAD*2 };
 
-/** デスク (Row 1, Col 0) */
-export const FRAME_DESK: SpriteFrame = { x: 0, y: CELL_H * 1, width: CELL_W, height: CELL_H };
+/** デスク (Row 0, Col 1) */
+export const FRAME_DESK: SpriteFrame = { x: CELL * 1 + PAD, y: 0 + PAD, width: CELL - PAD*2, height: CELL - PAD*2 };
 
-/** 椅子 (Row 2, Col 0) */
-export const FRAME_CHAIR: SpriteFrame = { x: 0, y: CELL_H * 2, width: CELL_W, height: CELL_H };
+/** 椅子 (Row 0, Col 2) */
+export const FRAME_CHAIR: SpriteFrame = { x: CELL * 2 + PAD, y: 0 + PAD, width: CELL - PAD*2, height: CELL - PAD*2 };
 
-/** 人型ボクセル (Row 3, Col 1 - Standing) */
-export const FRAME_HUMAN_STAND: SpriteFrame = { x: CELL_W * 1, y: CELL_H * 3, width: CELL_W, height: CELL_H };
+/** 観葉植物 (Row 1, Col 0) */
+export const FRAME_PLANT: SpriteFrame = { x: 0 + PAD, y: CELL * 1 + PAD, width: CELL - PAD*2, height: CELL - PAD*2 };
 
-/** 観葉植物 (Row 4, Col 0) */
-export const FRAME_PLANT: SpriteFrame = { x: 0, y: CELL_H * 4, width: CELL_W, height: CELL_H };
+/** 人型ボクセル (Row 1, Col 1 - Standing) */
+export const FRAME_HUMAN_STAND: SpriteFrame = { x: CELL * 1 + PAD, y: CELL * 1 + PAD, width: CELL - PAD*2, height: CELL - PAD*2 };

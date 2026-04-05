@@ -48,8 +48,8 @@ function FurnitureItem({ col, row, type }: FurnitureProps) {
     <pixiContainer x={x} y={y} zIndex={Z_INDEX_FURNITURE + y}>
       <pixiSprite
         texture={texture}
-        anchor={{ x: 0.5, y: 0.95 }}
-        scale={0.5}
+        anchor={{ x: 0.5, y: 0.7 }} // 中央より少し下にベースが来るように調整
+        scale={0.4} // 256px -> 102px (約1.6マス分)
       />
     </pixiContainer>
   );

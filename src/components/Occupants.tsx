@@ -59,22 +59,22 @@ function OccupantAvatar({ occupant, avatarUrl, offsetX, offsetY }: {
       {/* 椅子 */}
       <pixiSprite
         texture={chairTexture}
-        anchor={{ x: 0.5, y: 0.9 }}
-        scale={0.45}
+        anchor={{ x: 0.5, y: 0.8 }} // セル内の中央より少し下
+        scale={0.4}
         zIndex={Z_INDEX_AUTOSITTING_CHAIR}
       />
       
       {/* ボクセル人型キャラ */}
       <pixiSprite
         texture={humanTexture}
-        anchor={{ x: 0.5, y: 1.0 }}
-        scale={0.45}
-        y={-5}
+        anchor={{ x: 0.5, y: 0.85 }} // 椅子よりわずかに上
+        scale={0.4}
+        y={-2} // 微調整
       />
 
       {/* Discord アイコンを頭上に表示 (Identity) */}
       {avatarUrl && avatarTexture && (
-        <pixiContainer y={-60}>
+        <pixiContainer y={-50}>
             <pixiSprite
                 texture={avatarTexture}
                 anchor={0.5}
