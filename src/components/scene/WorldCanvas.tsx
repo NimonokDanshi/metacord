@@ -24,28 +24,30 @@ export function WorldCanvas() {
     const list: Array<{ occupant: SeatOccupant; voiceState?: any }> = [];
     const processedUserIds = new Set<string>();
 
-    // 1. まずは Presence (アクティビティ起動中) のユーザーを優先
-    occupants.forEach((occ) => {
-      const vs = voiceStates.find((s) => s.user.id === occ.user_id);
-      list.push({ occupant: occ, voiceState: vs });
-      processedUserIds.add(occ.user_id);
-    });
-
     // 固定の6座席インデックス (OfficeFurniture.tsx の定義に合わせる)
     const AVAILABLE_SEATS = [51, 53, 55, 87, 89, 91];
+
+    // 1. まずは Presence (アクティビティ起動中) のユーザーを反映
+    occupants.forEach((occ) => {
+      const vs = voiceStates.find((s) => String(s.user.id) === String(occ.user_id));
+      list.push({ occupant: occ, voiceState: vs });
+      processedUserIds.add(String(occ.user_id));
+    });
+
+    // 2. 現在使用中の座席を特定
     const occupiedSeats = new Set(Array.from(occupants.values()).map(o => o.seat_index));
     const remainingSeats = AVAILABLE_SEATS.filter(s => !occupiedSeats.has(s));
 
-    // 2. ボイスチャンネルにのみいるユーザーを追加
+    // 3. ボイスチャンネルにのみいるユーザーを追加
     const voiceOnlyUsers = voiceStates
-      .filter((vs) => !processedUserIds.has(vs.user.id))
-      .sort((a, b) => a.user.id.localeCompare(b.user.id));
+      .filter((vs) => !processedUserIds.has(String(vs.user.id)))
+      .sort((a, b) => String(a.user.id).localeCompare(String(b.user.id)));
 
     voiceOnlyUsers.forEach((vs, index) => {
       // 空き席があれば割り当て
       if (index < remainingSeats.length) {
         const syntheticOccupant: SeatOccupant = {
-          user_id: vs.user.id,
+          user_id: String(vs.user.id),
           display_name: vs.user.global_name || vs.user.username,
           avatar_url: getDiscordAvatarUrl(vs.user),
           seat_index: remainingSeats[index],
@@ -54,6 +56,12 @@ export function WorldCanvas() {
       }
     });
 
+    console.log('[WorldCanvas] Merged Members:', list.length, { 
+      presence: occupants.size, 
+      voiceOnly: voiceOnlyUsers.length,
+      list: list.map(m => m.occupant.display_name)
+    });
+    
     return list;
   }, [occupants, voiceStates]);
 

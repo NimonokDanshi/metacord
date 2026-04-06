@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -18,6 +18,16 @@ export function VoxelMember({ occupant, voiceState }: Props) {
 
   // 座席インデックスに基づいて 3D 座標を取得
   const pos = getPositionFromSeat(occupant.seat_index, HEIGHT_MEMBER_SITTING);
+
+  useEffect(() => {
+    console.log(`[VoxelMember] Rendering ${occupant.display_name}`, { 
+      seat: occupant.seat_index, 
+      pos,
+      isVoiceOnly: !voiceState?.nick
+    });
+  }, [occupant.display_name, occupant.seat_index, pos, voiceState]);
+
+  if (!pos) return null;
 
   // 待機時のアニメーション (着席時は控えめに)
   useFrame((state) => {
