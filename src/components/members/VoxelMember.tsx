@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { useVoxelGrid } from '@/hooks/useVoxelGrid';
+import { useDiscordStore } from '@/store/discordStore';
 import { COLORS, HEIGHT_MEMBER_SITTING } from '@/constants/voxel';
 import type { SeatOccupant } from '@/types/room';
 import type { VoiceState } from '@/types/discord';
@@ -14,18 +15,16 @@ interface Props {
 
 export function VoxelMember({ occupant, voiceState }: Props) {
   const { getPositionFromSeat } = useVoxelGrid();
+  const { addLogMessage } = useDiscordStore();
   const groupRef = useRef<THREE.Group>(null);
 
   // 座席インデックスに基づいて 3D 座標を取得
   const pos = getPositionFromSeat(occupant.seat_index, HEIGHT_MEMBER_SITTING);
 
   useEffect(() => {
-    console.log(`[VoxelMember] Rendering ${occupant.display_name}`, { 
-      seat: occupant.seat_index, 
-      pos,
-      isVoiceOnly: !voiceState?.nick
-    });
-  }, [occupant.display_name, occupant.seat_index, pos, voiceState]);
+    // 描画開始時に画面にログを出す (これで認識されているかが分かる)
+    addLogMessage(`[Render] ${occupant.display_name}: Rendering at seat ${occupant.seat_index}`);
+  }, [occupant.display_name, occupant.seat_index, addLogMessage]);
 
   if (!pos) return null;
 

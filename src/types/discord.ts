@@ -44,11 +44,22 @@ export interface DiscordChannel {
  * アバター画像のURLを生成するユーティリティ
  */
 export function getDiscordAvatarUrl(user: DiscordUser, size: number = 128): string {
+  if (!user) return `https://cdn.discordapp.com/embed/avatars/0.png`;
+  
   if (user.avatar) {
     return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=${size}`;
   }
-  // アバター未設定の場合はデフォルト画像
-  // 公式推奨: (BigInt(user.id) >> 22n) % 6n
-  const defaultAvatarIndex = (BigInt(user.id) >> 22n) % 6n;
-  return `https://cdn.discordapp.com/embed/avatars/${defaultAvatarIndex}.png`;
+
+  try {
+    // アバター未設定の場合はデフォルト画像
+    // 公式推奨: (BigInt(user.id) >> 22n) % 6n
+    // IDが極端に大きい場合の計算で例外が出るのを防ぐ
+    const userIdBigInt = BigInt(user.id);
+    const defaultAvatarIndex = Number((userIdBigInt >> 22n) % 6n);
+    return `https://cdn.discordapp.com/embed/avatars/${defaultAvatarIndex}.png`;
+  } catch (e) {
+    console.error('[getDiscordAvatarUrl] Calculate failed, using fallback:', e);
+    // 失敗した場合は暫定的にインデックス 0 を使用
+    return `https://cdn.discordapp.com/embed/avatars/0.png`;
+  }
 }
