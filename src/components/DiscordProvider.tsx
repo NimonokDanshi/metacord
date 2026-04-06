@@ -13,7 +13,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
   const {
     user, instanceId, channelId, guildId, voiceStates, isReady,
     rawChannelData, logMessages,
-    setUser, setReady, setInfo, setVoiceStates, updateVoiceState,
+    setUser, setReady, setInfo, setVoiceStates, updateVoiceState, removeVoiceState,
     setRawChannelData, addLogMessage
   } = useDiscordStore();
   const [showDebug, setShowDebug] = useState(false);
@@ -28,6 +28,9 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
 
   useEffect(() => {
     async function setupDiscord() {
+      let handleVoiceStateUpdate: ((event: any) => void) | null = null;
+      let pollInterval: NodeJS.Timeout | null = null;
+
       try {
         if (!process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID) {
           throw new Error('環境変数 NEXT_PUBLIC_DISCORD_CLIENT_ID が設定されていません。');
@@ -84,38 +87,62 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
         };
         setUser(discordUser);
 
-        if (discordSdk.channelId) {
+        // チャンネル情報を取得してストアを更新する関数
+        const fetchChannelData = async () => {
+          if (!discordSdk?.channelId) return;
           try {
-            log('getChannel 実行中...');
             const channel = await discordSdk.commands.getChannel({
               channel_id: discordSdk.channelId
             });
-            log('getChannel 成功', { name: channel.name, statesCount: channel.voice_states?.length });
+            log('同期ログ: チャンネル情報を取得しました', { statesCount: channel.voice_states?.length });
             setRawChannelData(channel);
 
-            if (channel.voice_states && channel.voice_states.length > 0) {
+            if (channel.voice_states) {
               setVoiceStates(channel.voice_states);
-            } else {
-              log('getChannel でリストが空でした。getSelectedVoiceChannel を試します...');
-              const selectedChannel = await (discordSdk.commands as any).getSelectedVoiceChannel();
-              log('getSelectedVoiceChannel 結果', { statesCount: selectedChannel?.voice_states?.length });
-              if (selectedChannel?.voice_states) {
-                setVoiceStates(selectedChannel.voice_states);
-              }
             }
           } catch (e: any) {
-            log('チャンネル情報取得エラー', e.message);
+            log('同期エラー: チャンネル情報の取得に失敗', e.message);
           }
+        };
 
-          discordSdk.subscribe('VOICE_STATE_UPDATE', (event: any) => {
-            console.log('[DiscordProvider] VOICE_STATE_UPDATE:', event);
-            // event は VoiceState 型に準拠したデータを含む
-            updateVoiceState(event);
-          }, { channel_id: discordSdk.channelId });
+        if (discordSdk.channelId) {
+          await fetchChannelData();
+
+          // リアルタイム更新の購読
+          handleVoiceStateUpdate = (event: any) => {
+            console.log('[DiscordProvider] VOICE_STATE_UPDATE Event:', event);
+            
+            // 自分の管理しているチャンネル内の更新かチェック
+            if (event.channel_id === discordSdk.channelId) {
+              updateVoiceState(event);
+            } else {
+              // チャンネルIDが異なる（＝退室した）場合はリストから削除
+              removeVoiceState(event.user.id);
+            }
+            
+            // 念のため、短時間後に全体リフレッシュ（デバウンス的な役割）
+            setTimeout(fetchChannelData, 500);
+          };
+
+          discordSdk.subscribe('VOICE_STATE_UPDATE', handleVoiceStateUpdate, { 
+            channel_id: discordSdk.channelId 
+          });
+
+          // 定期的なポーリング (30秒おき)
+          pollInterval = setInterval(fetchChannelData, 30000);
         }
 
         setReady(true);
         setIsConnected(true);
+
+        return () => {
+          if (pollInterval) clearInterval(pollInterval);
+          if (discordSdk && discordSdk.channelId && handleVoiceStateUpdate) {
+            discordSdk.unsubscribe('VOICE_STATE_UPDATE', handleVoiceStateUpdate, { 
+              channel_id: discordSdk.channelId 
+            });
+          }
+        };
       } catch (e: any) {
         console.error('[DiscordProvider] Error:', e);
         setError(e.message || 'Discordへの接続に失敗しました。');
@@ -123,15 +150,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
     }
 
     setupDiscord();
-
-    return () => {
-      // クリーンアップ処理
-      const currentChannelId = discordSdk?.channelId;
-      if (discordSdk && currentChannelId) {
-        discordSdk.unsubscribe('VOICE_STATE_UPDATE', () => { }, { channel_id: currentChannelId });
-      }
-    };
-  }, [setUser, setReady, setInfo, setVoiceStates, updateVoiceState]);
+  }, [setUser, setReady, setInfo, setVoiceStates, updateVoiceState, removeVoiceState]);
 
   // エラー画面
   if (error) {
@@ -172,7 +191,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
         </button>
 
         {showDebug && (
-          <div 
+          <div
             className="fixed top-16 left-4 w-96 max-h-[80vh] min-h-[300px] min-w-[300px] bg-slate-950/90 text-white p-4 rounded-lg shadow-2xl border border-white/20 z-[10000] text-[10px] font-mono backdrop-blur-md animate-in fade-in slide-in-from-top-2 overflow-auto"
             style={{ resize: 'both' }}
           >
@@ -205,7 +224,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
                       <span className="truncate max-w-[120px]">{vs.user.global_name || vs.user.username}</span>
                       <span className="flex gap-2">
                         {vs.voice_state?.self_mute && <span title="Muted">🔇</span>}
-                        {vs.voice_state?.self_deaf && <span title="Deafened">🎧❌</span>}
+                        {vs.voice_state?.self_deaf && <span title="Deafened">🎧</span>}
                       </span>
                     </div>
                   ))}

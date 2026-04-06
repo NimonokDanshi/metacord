@@ -15,6 +15,7 @@ interface DiscordStore {
   setInfo: (info: { instanceId: string; channelId: string | null; guildId: string | null }) => void;
   setVoiceStates: (states: VoiceState[]) => void;
   updateVoiceState: (state: VoiceState) => void;
+  removeVoiceState: (userId: string) => void;
   setRawChannelData: (data: any) => void;
   addLogMessage: (msg: string) => void;
 }
@@ -43,6 +44,9 @@ export const useDiscordStore = create<DiscordStore>((set) => ({
       ),
     };
   }),
+  removeVoiceState: (userId) => set((state) => ({
+    voiceStates: state.voiceStates.filter((s) => s.user.id !== userId)
+  })),
   setRawChannelData: (rawChannelData) => set({ rawChannelData }),
   addLogMessage: (msg) => set((state) => ({
     logMessages: [msg, ...state.logMessages].slice(0, 20)
