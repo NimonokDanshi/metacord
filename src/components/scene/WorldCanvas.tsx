@@ -60,8 +60,10 @@ export function WorldCanvas() {
   // マージ結果を画面上のログに出力
   useEffect(() => {
     if (mergedMembers.length > 0) {
-      const names = mergedMembers.map(m => m.occupant.display_name).join(', ');
-      addLogMessage(`[WorldCanvas] マージ完了: ${mergedMembers.length} 名 (${names})`);
+      const stats = mergedMembers
+        .map(m => `${m.occupant.display_name}(席:${m.occupant.seat_index})`)
+        .join(', ');
+      addLogMessage(`[WorldCanvas] マージ: ${mergedMembers.length} 名 [${stats}]`);
     }
   }, [mergedMembers, addLogMessage]);
 
