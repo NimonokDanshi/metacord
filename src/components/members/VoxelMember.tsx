@@ -18,15 +18,21 @@ export function VoxelMember({ occupant, voiceState }: Props) {
   const { addLogMessage } = useDiscordStore();
   const groupRef = useRef<THREE.Group>(null);
 
+  // コンポーネントが呼び出された瞬間にログを出す (useEffectに頼らない)
+  // 複数回呼ばれるのを防ぐため、コンソールにも出力
+  console.log(`[VoxelMember Trace] Rendering ${occupant.display_name}`, occupant);
+
   // 座席インデックスに基づいて 3D 座標を取得
-  const pos = getPositionFromSeat(occupant.seat_index, HEIGHT_MEMBER_SITTING);
+  const seatIdx = Number(occupant.seat_index);
+  const pos = getPositionFromSeat(seatIdx, HEIGHT_MEMBER_SITTING);
 
   useEffect(() => {
-    // 描画開始時に画面にログを出す (これで認識されているかが分かる)
-    addLogMessage(`[Render] ${occupant.display_name}: Rendering at seat ${occupant.seat_index}`);
-  }, [occupant.display_name, occupant.seat_index, addLogMessage]);
+    addLogMessage(`[Render OK] ${occupant.display_name}: seat ${seatIdx} (x:${pos.x.toFixed(2)}, z:${pos.z.toFixed(2)})`);
+  }, [occupant.display_name, seatIdx, pos, addLogMessage]);
 
-  if (!pos) return null;
+  if (!pos || isNaN(pos.x) || isNaN(pos.z)) {
+    return null;
+  }
 
   // 待機時のアニメーション (着席時は控えめに)
   useFrame((state) => {

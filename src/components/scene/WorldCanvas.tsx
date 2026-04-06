@@ -120,9 +120,13 @@ export function WorldCanvas() {
             {/* 家具 (固定) */}
             <OfficeFurniture />
 
-            {/* 参加者 */}
-            {Array.from(occupants.values()).map((occupant) => (
-              <VoxelMember key={occupant.user_id} occupant={occupant} />
+            {/* 参加者 (統合リスト) */}
+            {mergedMembers.map(({ occupant, voiceState }, index) => (
+              <VoxelMember 
+                key={`${String(occupant.user_id)}_${index}`} 
+                occupant={occupant} 
+                voiceState={voiceState} 
+              />
             ))}
           </group>
 
