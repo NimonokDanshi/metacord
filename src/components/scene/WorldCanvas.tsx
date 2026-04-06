@@ -23,19 +23,32 @@ export function WorldCanvas() {
   const mergedMembers = React.useMemo(() => {
     const list: Array<{ occupant: SeatOccupant; voiceState?: any }> = [];
     const processedUserIds = new Set<string>();
-
+    // 固定の6座席インデックス
     const ISLAND_SEATS = [51, 53, 55, 87, 89, 91];
+    const occupiedSeatsInList = new Set<number>();
 
     // 1. まずは Presence (アクティビティ起動中) のユーザーを反映
     occupants.forEach((occ) => {
       const vs = voiceStates.find((s) => String(s.user.id) === String(occ.user_id));
-      list.push({ occupant: occ, voiceState: vs });
+      
+      // 座席が島の中にあり、かつ重複していないか確認
+      let finalSeat = occ.seat_index;
+      if (!ISLAND_SEATS.includes(finalSeat) || occupiedSeatsInList.has(finalSeat)) {
+        // 島の中の空いている席を探す
+        const fallback = ISLAND_SEATS.find(s => !occupiedSeatsInList.has(s));
+        if (fallback !== undefined) finalSeat = fallback;
+      }
+
+      list.push({ 
+        occupant: { ...occ, seat_index: finalSeat }, 
+        voiceState: vs 
+      });
       processedUserIds.add(String(occ.user_id));
+      occupiedSeatsInList.add(finalSeat);
     });
 
-    // 2. 現在使用中の座席を特定
-    const occupiedSeats = new Set(Array.from(occupants.values()).map(o => o.seat_index));
-    const remainingSeats = ISLAND_SEATS.filter(s => !occupiedSeats.has(s));
+    // 2. 残りの空き席を特定
+    const remainingSeats = ISLAND_SEATS.filter(s => !occupiedSeatsInList.has(s));
 
     // 3. ボイスチャンネルにのみいるユーザーを追加
     const voiceOnlyUsers = voiceStates
@@ -44,13 +57,15 @@ export function WorldCanvas() {
 
     voiceOnlyUsers.forEach((vs, index) => {
       if (index < remainingSeats.length) {
+        const finalSeat = remainingSeats[index];
         const syntheticOccupant: SeatOccupant = {
           user_id: String(vs.user.id),
           display_name: vs.user.global_name || vs.user.username,
           avatar_url: getDiscordAvatarUrl(vs.user),
-          seat_index: remainingSeats[index],
+          seat_index: finalSeat,
         };
         list.push({ occupant: syntheticOccupant, voiceState: vs });
+        occupiedSeatsInList.add(finalSeat);
       }
     });
     
@@ -63,7 +78,7 @@ export function WorldCanvas() {
       const stats = mergedMembers
         .map(m => `${m.occupant.display_name}(席:${m.occupant.seat_index})`)
         .join(', ');
-      addLogMessage(`[WorldCanvas] マージ: ${mergedMembers.length} 名 [${stats}]`);
+      addLogMessage(`[WorldCanvas] マージ結果: ${mergedMembers.length} 名 [${stats}]`);
     }
   }, [mergedMembers, addLogMessage]);
 
