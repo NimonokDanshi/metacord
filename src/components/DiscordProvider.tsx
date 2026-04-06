@@ -10,8 +10,8 @@ import { DiscordUser, DiscordChannel, VoiceState } from '@/types/discord';
 export default function DiscordProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { 
-    user, instanceId, channelId, guildId, voiceStates, isReady, 
+  const {
+    user, instanceId, channelId, guildId, voiceStates, isReady,
     rawChannelData, logMessages,
     setUser, setReady, setInfo, setVoiceStates, updateVoiceState,
     setRawChannelData, addLogMessage
@@ -60,7 +60,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
           response_type: 'code',
           state: '',
           prompt: 'none',
-          scope: ['identify', 'guilds.members.read'],
+          scope: ['identify', 'guilds', 'guilds.members.read', 'rpc.voice.read'],
         });
 
         log('トークン交換中...');
@@ -87,12 +87,12 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
         if (discordSdk.channelId) {
           try {
             log('getChannel 実行中...');
-            const channel = await discordSdk.commands.getChannel({ 
-              channel_id: discordSdk.channelId 
+            const channel = await discordSdk.commands.getChannel({
+              channel_id: discordSdk.channelId
             });
             log('getChannel 成功', { name: channel.name, statesCount: channel.voice_states?.length });
             setRawChannelData(channel);
-            
+
             if (channel.voice_states && channel.voice_states.length > 0) {
               setVoiceStates(channel.voice_states);
             } else {
@@ -128,7 +128,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
       // クリーンアップ処理
       const currentChannelId = discordSdk?.channelId;
       if (discordSdk && currentChannelId) {
-        discordSdk.unsubscribe('VOICE_STATE_UPDATE', () => {}, { channel_id: currentChannelId });
+        discordSdk.unsubscribe('VOICE_STATE_UPDATE', () => { }, { channel_id: currentChannelId });
       }
     };
   }, [setUser, setReady, setInfo, setVoiceStates, updateVoiceState]);
@@ -172,8 +172,11 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
         </button>
 
         {showDebug && (
-          <div className="absolute bottom-10 right-0 w-96 max-h-[80vh] bg-slate-950/90 text-white p-4 rounded-lg shadow-2xl border border-white/20 overflow-y-auto z-50 text-[10px] font-mono backdrop-blur-md animate-in fade-in slide-in-from-bottom-2">
-            <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-3">
+          <div
+            className="absolute bottom-10 right-0 w-96 max-h-[80vh] min-h-[300px] min-w-[300px] bg-slate-950/90 text-white p-4 rounded-lg shadow-2xl border border-white/20 z-50 text-[10px] font-mono backdrop-blur-md animate-in fade-in slide-in-from-bottom-2 overflow-auto"
+            style={{ resize: 'both' }}
+          >
+            <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-3 sticky top-0 bg-slate-950/20 backdrop-blur-sm z-10">
               <h3 className="text-xs font-bold text-cyan-400">ZUSTAND STORE DEBUG</h3>
               <div className="flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${isReady ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
@@ -227,7 +230,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
               </div>
             </section>
 
-            <button 
+            <button
               onClick={() => setShowDebug(false)}
               className="mt-4 w-full py-2 bg-white/5 hover:bg-white/10 rounded transition-colors text-[9px] uppercase tracking-widest border border-white/10"
             >
