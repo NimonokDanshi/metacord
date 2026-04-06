@@ -172,8 +172,8 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
         </button>
 
         {showDebug && (
-          <div
-            className="absolute bottom-10 right-0 w-96 max-h-[80vh] min-h-[300px] min-w-[300px] bg-slate-950/90 text-white p-4 rounded-lg shadow-2xl border border-white/20 z-50 text-[10px] font-mono backdrop-blur-md animate-in fade-in slide-in-from-bottom-2 overflow-auto"
+          <div 
+            className="fixed top-16 left-4 w-96 max-h-[80vh] min-h-[300px] min-w-[300px] bg-slate-950/90 text-white p-4 rounded-lg shadow-2xl border border-white/20 z-[10000] text-[10px] font-mono backdrop-blur-md animate-in fade-in slide-in-from-top-2 overflow-auto"
             style={{ resize: 'both' }}
           >
             <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-3 sticky top-0 bg-slate-950/20 backdrop-blur-sm z-10">

@@ -9,11 +9,53 @@ import { OfficeFurniture } from '../office/OfficeFurniture';
 import { VoxelMember } from '../members/VoxelMember';
 import { useRoom } from '@/hooks/useRoom';
 import { useRoomStore } from '@/store/roomStore';
+import { useDiscordStore } from '@/store/discordStore';
+import { getDiscordAvatarUrl } from '@/types/discord';
+import { SeatOccupant } from '@/types/room';
 
 export function WorldCanvas() {
   // Supabase/Presence の同期を開始
   useRoom();
   const occupants = useRoomStore((state) => state.occupants);
+  const voiceStates = useDiscordStore((state) => state.voiceStates);
+
+  // 統合されたメンバーリストを作成
+  const mergedMembers = React.useMemo(() => {
+    const list: Array<{ occupant: SeatOccupant; voiceState?: any }> = [];
+    const processedUserIds = new Set<string>();
+
+    // 1. まずは Presence (アクティビティ起動中) のユーザーを優先
+    occupants.forEach((occ) => {
+      const vs = voiceStates.find((s) => s.user.id === occ.user_id);
+      list.push({ occupant: occ, voiceState: vs });
+      processedUserIds.add(occ.user_id);
+    });
+
+    // 固定の6座席インデックス (OfficeFurniture.tsx の定義に合わせる)
+    const AVAILABLE_SEATS = [51, 53, 55, 87, 89, 91];
+    const occupiedSeats = new Set(Array.from(occupants.values()).map(o => o.seat_index));
+    const remainingSeats = AVAILABLE_SEATS.filter(s => !occupiedSeats.has(s));
+
+    // 2. ボイスチャンネルにのみいるユーザーを追加
+    const voiceOnlyUsers = voiceStates
+      .filter((vs) => !processedUserIds.has(vs.user.id))
+      .sort((a, b) => a.user.id.localeCompare(b.user.id));
+
+    voiceOnlyUsers.forEach((vs, index) => {
+      // 空き席があれば割り当て
+      if (index < remainingSeats.length) {
+        const syntheticOccupant: SeatOccupant = {
+          user_id: vs.user.id,
+          display_name: vs.user.global_name || vs.user.username,
+          avatar_url: getDiscordAvatarUrl(vs.user),
+          seat_index: remainingSeats[index],
+        };
+        list.push({ occupant: syntheticOccupant, voiceState: vs });
+      }
+    });
+
+    return list;
+  }, [occupants, voiceStates]);
 
   return (
     <div className="w-full h-full bg-[#1a1a2e]">
