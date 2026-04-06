@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrthographicCamera, ContactShadows, OrbitControls } from '@react-three/drei';
 import { COLORS } from '@/constants/voxel';
@@ -17,15 +17,14 @@ export function WorldCanvas() {
   // Supabase/Presence の同期を開始
   useRoom();
   const occupants = useRoomStore((state) => state.occupants);
-  const voiceStates = useDiscordStore((state) => state.voiceStates);
+  const { voiceStates, addLogMessage } = useDiscordStore();
 
   // 統合されたメンバーリストを作成
   const mergedMembers = React.useMemo(() => {
     const list: Array<{ occupant: SeatOccupant; voiceState?: any }> = [];
     const processedUserIds = new Set<string>();
 
-    // 固定の6座席インデックス (OfficeFurniture.tsx の定義に合わせる)
-    const AVAILABLE_SEATS = [51, 53, 55, 87, 89, 91];
+    const ISLAND_SEATS = [51, 53, 55, 87, 89, 91];
 
     // 1. まずは Presence (アクティビティ起動中) のユーザーを反映
     occupants.forEach((occ) => {
@@ -36,7 +35,7 @@ export function WorldCanvas() {
 
     // 2. 現在使用中の座席を特定
     const occupiedSeats = new Set(Array.from(occupants.values()).map(o => o.seat_index));
-    const remainingSeats = AVAILABLE_SEATS.filter(s => !occupiedSeats.has(s));
+    const remainingSeats = ISLAND_SEATS.filter(s => !occupiedSeats.has(s));
 
     // 3. ボイスチャンネルにのみいるユーザーを追加
     const voiceOnlyUsers = voiceStates
@@ -44,7 +43,6 @@ export function WorldCanvas() {
       .sort((a, b) => String(a.user.id).localeCompare(String(b.user.id)));
 
     voiceOnlyUsers.forEach((vs, index) => {
-      // 空き席があれば割り当て
       if (index < remainingSeats.length) {
         const syntheticOccupant: SeatOccupant = {
           user_id: String(vs.user.id),
@@ -55,15 +53,17 @@ export function WorldCanvas() {
         list.push({ occupant: syntheticOccupant, voiceState: vs });
       }
     });
-
-    console.log('[WorldCanvas] Merged Members:', list.length, { 
-      presence: occupants.size, 
-      voiceOnly: voiceOnlyUsers.length,
-      list: list.map(m => m.occupant.display_name)
-    });
     
     return list;
   }, [occupants, voiceStates]);
+
+  // マージ結果を画面上のログに出力
+  useEffect(() => {
+    if (mergedMembers.length > 0) {
+      const names = mergedMembers.map(m => m.occupant.display_name).join(', ');
+      addLogMessage(`[WorldCanvas] マージ完了: ${mergedMembers.length} 名 (${names})`);
+    }
+  }, [mergedMembers, addLogMessage]);
 
   return (
     <div className="w-full h-full bg-[#1a1a2e]">

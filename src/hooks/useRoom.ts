@@ -10,8 +10,14 @@ import { getDiscordAvatarUrl } from '@/types/discord';
 import { GRID_SIZE_X, GRID_SIZE_Z } from '@/constants/voxel';
 
 const MAX_SEATS = GRID_SIZE_X * GRID_SIZE_Z;
+const ISLAND_SEATS = [51, 53, 55, 87, 89, 91];
 
 function pickEmptySeat(occupiedSeats: Set<number>): number {
+  // まずは島（デスクのある席）から探す
+  for (const seat of ISLAND_SEATS) {
+    if (!occupiedSeats.has(seat)) return seat;
+  }
+  // 島がいっぱいなら若い順に探す
   for (let i = 0; i < MAX_SEATS; i++) {
     if (!occupiedSeats.has(i)) return i;
   }
