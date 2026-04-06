@@ -26,10 +26,6 @@ export function VoxelMember({ occupant, voiceState }: Props) {
   const seatIdx = Number(occupant.seat_index);
   const pos = getPositionFromSeat(seatIdx, HEIGHT_MEMBER_SITTING);
 
-  useEffect(() => {
-    addLogMessage(`[Render OK] ${occupant.display_name}: seat ${seatIdx} (x:${pos.x.toFixed(2)}, z:${pos.z.toFixed(2)})`);
-  }, [occupant.display_name, seatIdx, pos, addLogMessage]);
-
   if (!pos || isNaN(pos.x) || isNaN(pos.z)) {
     return null;
   }

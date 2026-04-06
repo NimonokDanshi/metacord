@@ -72,16 +72,6 @@ export function WorldCanvas() {
     return list;
   }, [occupants, voiceStates]);
 
-  // マージ結果を画面上のログに出力
-  useEffect(() => {
-    if (mergedMembers.length > 0) {
-      const stats = mergedMembers
-        .map(m => `${m.occupant.display_name}(席:${m.occupant.seat_index})`)
-        .join(', ');
-      addLogMessage(`[WorldCanvas] マージ結果: ${mergedMembers.length} 名 [${stats}]`);
-    }
-  }, [mergedMembers, addLogMessage]);
-
   return (
     <div className="w-full h-full bg-[#1a1a2e]">
       <Canvas shadows gl={{ antialias: true, stencil: false }}>
