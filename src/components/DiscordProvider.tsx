@@ -10,7 +10,8 @@ import { DiscordUser } from '@/types/discord';
 export default function DiscordProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { setUser, setReady, setInfo } = useDiscordStore();
+  const { user, instanceId, channelId, guildId, isReady, setUser, setReady, setInfo } = useDiscordStore();
+  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     async function setupDiscord() {
@@ -125,5 +126,47 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+
+      {/* デバッグ情報表示ボタン (開発時のみ) */}
+      <div className="fixed bottom-4 right-4 z-[9999]">
+        <button
+          onClick={() => setShowDebug(!showDebug)}
+          className="bg-slate-800/80 hover:bg-slate-700 text-white text-[10px] px-2 py-1 rounded border border-slate-600 backdrop-blur-sm transition-colors"
+        >
+          {showDebug ? 'Hide Debug' : 'Show Debug'}
+        </button>
+
+        {showDebug && (
+          <div className="absolute bottom-10 right-0 w-80 bg-slate-950/90 border border-slate-700 rounded-lg p-4 text-[11px] font-mono text-emerald-400 shadow-2xl backdrop-blur-md overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+            <h3 className="text-slate-400 font-bold mb-2 border-b border-slate-800 pb-1 flex justify-between items-center">
+              <span>ZUSTAND STORE DEBUG</span>
+              <span className={isReady ? 'text-emerald-500' : 'text-red-500'}>
+                ● {isReady ? 'READY' : 'NOT READY'}
+              </span>
+            </h3>
+            <div className="space-y-2">
+              <div>
+                <span className="text-slate-500">instanceId:</span> {instanceId || 'null'}
+              </div>
+              <div>
+                <span className="text-slate-500">channelId:</span> {channelId || 'null'}
+              </div>
+              <div>
+                <span className="text-slate-500">guildId:</span> {guildId || 'null'}
+              </div>
+              <div>
+                <span className="text-slate-500">user:</span>
+                <pre className="mt-1 p-2 bg-slate-900/50 rounded overflow-x-auto text-emerald-300">
+                  {JSON.stringify(user, null, 2)}
+                </pre>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
 }
