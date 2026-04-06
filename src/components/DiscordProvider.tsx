@@ -3,14 +3,17 @@
 import { useEffect, useState } from 'react';
 import { discordSdk, setupDiscordProxy } from '@/lib/discord';
 import { useDiscordStore } from '@/store/discordStore';
-import { DiscordUser } from '@/types/discord';
+import { DiscordUser, DiscordChannel, VoiceState } from '@/types/discord';
 
 
 
 export default function DiscordProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user, instanceId, channelId, guildId, isReady, setUser, setReady, setInfo } = useDiscordStore();
+  const { 
+    user, instanceId, channelId, guildId, voiceStates, isReady, 
+    setUser, setReady, setInfo, setVoiceStates, updateVoiceState 
+  } = useDiscordStore();
   const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
@@ -52,7 +55,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
           response_type: 'code',
           state: '',
           prompt: 'none',
-          scope: ['identify'],
+          scope: ['identify', 'guilds.members.read'],
         });
 
         // Step 5: アクセストークンをサーバーサイド経由で取得
@@ -86,10 +89,31 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
           id: auth.user.id,
           username: auth.user.username,
           discriminator: auth.user.discriminator,
-          avatar: auth.user.avatar ?? null,
-          global_name: auth.user.global_name ?? null,
+          avatar: auth.user.avatar,
+          global_name: auth.user.global_name,
         };
         setUser(discordUser);
+
+        // Step 8: ボイスチャンネルの初期ユーザーリストを取得
+        if (discordSdk.channelId) {
+          try {
+            const channel: DiscordChannel = await discordSdk.commands.getChannel({ 
+              channel_id: discordSdk.channelId 
+            });
+            console.log('[DiscordProvider] チャンネル情報取得成功:', channel.name);
+            setVoiceStates(channel.voice_states);
+          } catch (e) {
+            console.warn('[DiscordProvider] チャンネル情報の取得に失敗しました:', e);
+          }
+
+          // Step 9: ボイスステートの更新を購読
+          discordSdk.subscribe('VOICE_STATE_UPDATE', (event: any) => {
+            console.log('[DiscordProvider] VOICE_STATE_UPDATE:', event);
+            // event は VoiceState 型に準拠したデータを含む
+            updateVoiceState(event);
+          }, { channel_id: discordSdk.channelId });
+        }
+
         setReady(true);
         setIsConnected(true);
       } catch (e: any) {
@@ -99,7 +123,15 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
     }
 
     setupDiscord();
-  }, [setUser, setReady, setInfo]);
+
+    return () => {
+      // クリーンアップ処理
+      const currentChannelId = discordSdk?.channelId;
+      if (discordSdk && currentChannelId) {
+        discordSdk.unsubscribe('VOICE_STATE_UPDATE', () => {}, { channel_id: currentChannelId });
+      }
+    };
+  }, [setUser, setReady, setInfo, setVoiceStates, updateVoiceState]);
 
   // エラー画面
   if (error) {
@@ -134,34 +166,53 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
       <div className="fixed bottom-4 right-4 z-[9999]">
         <button
           onClick={() => setShowDebug(!showDebug)}
-          className="bg-slate-800/80 hover:bg-slate-700 text-white text-[10px] px-2 py-1 rounded border border-slate-600 backdrop-blur-sm transition-colors"
+          className="bg-slate-800/80 hover:bg-slate-700 text-white text-[10px] px-2 py-1 rounded border border-slate-600 backdrop-blur-sm transition-colors shadow-lg"
         >
           {showDebug ? 'Hide Debug' : 'Show Debug'}
         </button>
 
         {showDebug && (
-          <div className="absolute bottom-10 right-0 w-80 bg-slate-950/90 border border-slate-700 rounded-lg p-4 text-[11px] font-mono text-emerald-400 shadow-2xl backdrop-blur-md overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+          <div className="absolute bottom-10 right-0 w-80 max-h-[80vh] bg-slate-950/90 border border-slate-700 rounded-lg p-4 text-[11px] font-mono text-emerald-400 shadow-2xl backdrop-blur-md overflow-y-auto animate-in fade-in slide-in-from-bottom-2">
             <h3 className="text-slate-400 font-bold mb-2 border-b border-slate-800 pb-1 flex justify-between items-center">
               <span>ZUSTAND STORE DEBUG</span>
               <span className={isReady ? 'text-emerald-500' : 'text-red-500'}>
                 ● {isReady ? 'READY' : 'NOT READY'}
               </span>
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-4">
               <div>
-                <span className="text-slate-500">instanceId:</span> {instanceId || 'null'}
+                <h4 className="text-slate-500 mb-1">Context:</h4>
+                <div className="pl-2 border-l border-slate-800">
+                  <div>instanceId: {instanceId || 'null'}</div>
+                  <div>channelId: {channelId || 'null'}</div>
+                  <div>guildId: {guildId || 'null'}</div>
+                </div>
               </div>
+              
               <div>
-                <span className="text-slate-500">channelId:</span> {channelId || 'null'}
-              </div>
-              <div>
-                <span className="text-slate-500">guildId:</span> {guildId || 'null'}
-              </div>
-              <div>
-                <span className="text-slate-500">user:</span>
-                <pre className="mt-1 p-2 bg-slate-900/50 rounded overflow-x-auto text-emerald-300">
+                <h4 className="text-slate-500 mb-1">Current User:</h4>
+                <pre className="p-2 bg-slate-900/50 rounded overflow-x-auto text-emerald-300">
                   {JSON.stringify(user, null, 2)}
                 </pre>
+              </div>
+
+              <div>
+                <h4 className="text-slate-500 mb-1 flex justify-between">
+                  <span>Voice States:</span>
+                  <span className="text-emerald-600">{voiceStates.length} users</span>
+                </h4>
+                <div className="space-y-1">
+                  {voiceStates.map((vs) => (
+                    <div key={vs.user.id} className="p-1 px-2 bg-slate-900/30 rounded border border-slate-800/50 flex justify-between items-center">
+                      <span className="truncate max-w-[120px]">{vs.user.global_name || vs.user.username}</span>
+                      <span className="flex gap-2">
+                        {vs.voice_state.self_mute && <span title="Muted">🔇</span>}
+                        {vs.voice_state.self_deaf && <span title="Deafened">🎧❌</span>}
+                      </span>
+                    </div>
+                  ))}
+                  {voiceStates.length === 0 && <div className="text-slate-600 italic">No data</div>}
+                </div>
               </div>
             </div>
           </div>

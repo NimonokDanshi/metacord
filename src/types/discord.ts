@@ -5,8 +5,39 @@ export interface DiscordUser {
   id: string;
   username: string;
   discriminator: string;
-  avatar: string | null;
-  global_name: string | null;
+  avatar?: string | null;
+  global_name?: string | null;
+  bot?: boolean;
+  flags?: number | null;
+  premium_type?: number | null;
+}
+
+/**
+ * ボイスステート（マイク・スピーカーの状態）
+ * Discord SDK の getChannel や VOICE_STATE_UPDATE の構造に準拠
+ */
+export interface VoiceState {
+  mute: boolean;
+  nick: string;
+  user: DiscordUser;
+  voice_state: {
+    mute: boolean;
+    deaf: boolean;
+    self_mute: boolean;
+    self_deaf: boolean;
+    suppress: boolean;
+  };
+  volume: number;
+}
+
+/**
+ * チャンネル情報の型 (GET_CHANNEL)
+ */
+export interface DiscordChannel {
+  id: string;
+  name?: string | null;
+  type: number;
+  voice_states: VoiceState[];
 }
 
 /**
