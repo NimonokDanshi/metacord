@@ -12,9 +12,19 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
   const [error, setError] = useState<string | null>(null);
   const { 
     user, instanceId, channelId, guildId, voiceStates, isReady, 
-    setUser, setReady, setInfo, setVoiceStates, updateVoiceState 
+    rawChannelData, logMessages,
+    setUser, setReady, setInfo, setVoiceStates, updateVoiceState,
+    setRawChannelData, addLogMessage
   } = useDiscordStore();
   const [showDebug, setShowDebug] = useState(false);
+
+  // 簡易ログ出力関数
+  const log = (msg: string, data?: any) => {
+    const time = new Date().toLocaleTimeString();
+    const fullMsg = `[${time}] ${msg}`;
+    console.log(fullMsg, data);
+    addLogMessage(fullMsg + (data ? ` ${JSON.stringify(data).substring(0, 50)}...` : ''));
+  };
 
   useEffect(() => {
     async function setupDiscord() {
@@ -24,67 +34,47 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
         }
 
         if (!discordSdk) {
-          throw new Error('Discord 外のブラウザで起動されています。Discord ボイスチャンネルの『ロケットボタン』から起動してください。');
+          log('SDK が見つかりません。Discord 内で起動してください。');
+          return;
         }
 
-        // Step 1: Discordアプリ(iFrameの親)とのハンドシェイクを行う
-        console.log('[DiscordProvider] SDK の準備を開始します...');
+        log('SDK の準備を開始します...');
         await discordSdk.ready();
 
-        console.log('[DiscordProvider] SDK Ready!', {
+        log('SDK Ready!', {
           instanceId: discordSdk.instanceId,
           channelId: discordSdk.channelId,
           guildId: discordSdk.guildId,
         });
 
-        // Step 2: Discord CSP 対策 — URL プロキシマッピングを適用
         setupDiscordProxy();
-        console.log('[DiscordProvider] URL プロキシマッピングを適用しました。');
-
-        // Step 3: インスタンス情報を保存
         setInfo({
           instanceId: discordSdk.instanceId,
           channelId: discordSdk.channelId,
           guildId: discordSdk.guildId,
         });
 
-        // Step 4: Discord OAuth 認証を実施してアクセストークンを取得
-        console.log('[DiscordProvider] 認可コードを取得中...');
+        log('認可コードを取得中...');
         const { code } = await discordSdk.commands.authorize({
-          client_id: process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID,
+          client_id: process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID!,
           response_type: 'code',
           state: '',
           prompt: 'none',
           scope: ['identify', 'guilds.members.read'],
         });
 
-        // Step 5: アクセストークンをサーバーサイド経由で取得
-        console.log('[DiscordProvider] トークン交換中...', { code: code.substring(0, 5) + '...' });
+        log('トークン交換中...');
         const tokenResponse = await fetch('/api/discord/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code }),
         });
 
-        if (!tokenResponse.ok) {
-          const errText = await tokenResponse.text();
-          console.error('[DiscordProvider] トークン取得エラー:', errText);
-          throw new Error(`アクセストークンの取得に失敗しました: ${tokenResponse.status}`);
-        }
-
         const { access_token } = await tokenResponse.json();
-
-        // Step 6: アクセストークンでSDKを認証し、ユーザー情報を取得
-        console.log('[DiscordProvider] SDK を認証中...');
+        log('SDK を認証中...');
         const auth = await discordSdk.commands.authenticate({ access_token });
+        log('認証成功:', auth.user.username);
 
-        if (!auth || !auth.user) {
-          throw new Error('Discord認証に失敗しました。');
-        }
-
-        console.log('[DiscordProvider] 認証成功:', auth.user.username);
-
-        // Step 7: 取得したユーザー情報をZustandストアに保存
         const discordUser: DiscordUser = {
           id: auth.user.id,
           username: auth.user.username,
@@ -94,19 +84,29 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
         };
         setUser(discordUser);
 
-        // Step 8: ボイスチャンネルの初期ユーザーリストを取得
         if (discordSdk.channelId) {
           try {
-            const channel: DiscordChannel = await discordSdk.commands.getChannel({ 
+            log('getChannel 実行中...');
+            const channel = await discordSdk.commands.getChannel({ 
               channel_id: discordSdk.channelId 
             });
-            console.log('[DiscordProvider] チャンネル情報取得成功:', channel.name);
-            setVoiceStates(channel.voice_states);
-          } catch (e) {
-            console.warn('[DiscordProvider] チャンネル情報の取得に失敗しました:', e);
+            log('getChannel 成功', { name: channel.name, statesCount: channel.voice_states?.length });
+            setRawChannelData(channel);
+            
+            if (channel.voice_states && channel.voice_states.length > 0) {
+              setVoiceStates(channel.voice_states);
+            } else {
+              log('getChannel でリストが空でした。getSelectedVoiceChannel を試します...');
+              const selectedChannel = await (discordSdk.commands as any).getSelectedVoiceChannel();
+              log('getSelectedVoiceChannel 結果', { statesCount: selectedChannel?.voice_states?.length });
+              if (selectedChannel?.voice_states) {
+                setVoiceStates(selectedChannel.voice_states);
+              }
+            }
+          } catch (e: any) {
+            log('チャンネル情報取得エラー', e.message);
           }
 
-          // Step 9: ボイスステートの更新を購読
           discordSdk.subscribe('VOICE_STATE_UPDATE', (event: any) => {
             console.log('[DiscordProvider] VOICE_STATE_UPDATE:', event);
             // event は VoiceState 型に準拠したデータを含む

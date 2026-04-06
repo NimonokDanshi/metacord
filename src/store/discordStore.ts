@@ -8,11 +8,15 @@ interface DiscordStore {
   guildId: string | null;
   voiceStates: VoiceState[];
   isReady: boolean;
-  setUser: (user: DiscordUser) => void;
+  rawChannelData: any;
+  logMessages: string[];
+  setUser: (user: DiscordUser | null) => void;
   setReady: (ready: boolean) => void;
   setInfo: (info: { instanceId: string; channelId: string | null; guildId: string | null }) => void;
   setVoiceStates: (states: VoiceState[]) => void;
   updateVoiceState: (state: VoiceState) => void;
+  setRawChannelData: (data: any) => void;
+  addLogMessage: (msg: string) => void;
 }
 
 export const useDiscordStore = create<DiscordStore>((set) => ({
@@ -22,6 +26,8 @@ export const useDiscordStore = create<DiscordStore>((set) => ({
   guildId: null,
   voiceStates: [],
   isReady: false,
+  rawChannelData: null,
+  logMessages: [],
   setUser: (user) => set({ user }),
   setReady: (ready) => set({ isReady: ready }),
   setInfo: (info) => set({ ...info }),
@@ -37,4 +43,8 @@ export const useDiscordStore = create<DiscordStore>((set) => ({
       ),
     };
   }),
+  setRawChannelData: (rawChannelData) => set({ rawChannelData }),
+  addLogMessage: (msg) => set((state) => ({
+    logMessages: [msg, ...state.logMessages].slice(0, 20)
+  })),
 }));
