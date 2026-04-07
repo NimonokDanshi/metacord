@@ -48,7 +48,7 @@ export function VoxelMember({ occupant, voiceState }: Props) {
         <boxGeometry args={[0.4, 0.6, 0.3]} />
         <meshStandardMaterial color={COLORS.AVATAR_BLUE} />
       </mesh>
-      
+
       {/* 頭 (Skin Voxel) */}
       <mesh castShadow position={[0, 0.45, 0]}>
         <boxGeometry args={[0.3, 0.3, 0.3]} />
@@ -66,9 +66,9 @@ export function VoxelMember({ occupant, voiceState }: Props) {
           {/* アバターコンテナ */}
           <div className="relative">
             <div className={`w-8 h-8 rounded-full border-2 ${isMuted ? 'border-red-500' : 'border-white'} overflow-hidden shadow-lg bg-[#2c3e50]`}>
-              <img 
-                src={occupant.avatar_url || ''} 
-                alt="" 
+              <img
+                src={occupant.avatar_url || ''}
+                alt=""
                 className="w-full h-full object-cover"
               />
             </div>
@@ -79,7 +79,7 @@ export function VoxelMember({ occupant, voiceState }: Props) {
                   <div className="bg-red-600 text-[8px] p-0.5 rounded-full shadow-md border border-white/20">🔇</div>
                 )}
                 {isDeaf && (
-                  <div className="bg-slate-700 text-[8px] p-0.5 rounded-full shadow-md border border-white/20">🎧❌</div>
+                  <div className="bg-slate-700 text-[8px] p-0.5 rounded-full shadow-md border border-white/20">🎧</div>
                 )}
               </div>
             )}
