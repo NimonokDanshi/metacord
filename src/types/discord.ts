@@ -25,6 +25,8 @@ export interface VoiceState {
     deaf: boolean;
     self_mute: boolean;
     self_deaf: boolean;
+    self_video?: boolean;
+    self_stream?: boolean;
     suppress: boolean;
   };
   volume: number;
