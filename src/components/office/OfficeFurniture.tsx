@@ -111,13 +111,16 @@ export function OfficeFurniture() {
         const seatIdx = conf.zIdx * GRID_SIZE_X + conf.xIdx;
         const pos = getPositionFromSeat(seatIdx, 0);
         
-        const workstationZOffset = conf.chairRot === 0 ? -1.0 : 1.0;
+        // chairRot: 0 (南向き) ならデスクは南側 (+Z)
+        // chairRot: PI (北向き) ならデスクは北側 (-Z)
+        const workstationZOffset = conf.chairRot === 0 ? 1.0 : -1.0;
         const workstationPos = { ...pos, z: pos.z + workstationZOffset };
 
         return (
           <group key={i}>
             <Chair pos={pos} rotation={conf.chairRot} />
-            <Workstation pos={workstationPos} rotation={conf.chairRot} />
+            {/* デスクが椅子の方を向くように回転を PI ずらす */}
+            <Workstation pos={workstationPos} rotation={conf.chairRot + Math.PI} />
           </group>
         );
       })}
