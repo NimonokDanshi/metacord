@@ -5,16 +5,16 @@ import { Monitor, PCCase, Keyboard, Mouse } from './OfficeEquipment';
 function Desk({ pos }: { pos: { x: number; y: number; z: number } }) {
   return (
     <group position={[pos.x, pos.y, pos.z]}>
-      {/* 天板 (2マス幅に拡張) */}
-      <mesh castShadow receiveShadow position={[0.5, HEIGHT_DESK - 0.05, 0]}>
-        <boxGeometry args={[1.9, 0.1, DESK_DEPTH]} />
+      {/* 天板 (センター配置) */}
+      <mesh castShadow receiveShadow position={[0, HEIGHT_DESK - 0.05, 0]}>
+        <boxGeometry args={[1.98, 0.1, DESK_DEPTH]} />
         <meshStandardMaterial color={COLORS.DESK} />
       </mesh>
-      {/* 脚 */}
-      {[-0.3, 1.3].map((x) => 
+      {/* 脚 (センター基準) */}
+      {[-0.8, 0.8].map((x) => 
         [-0.3, 0.3].map((z) => (
           <mesh key={`${x}-${z}`} castShadow position={[x, (HEIGHT_DESK - 0.1) / 2, z]}>
-            <boxGeometry args={[0.1, HEIGHT_DESK - 0.1, 0.1]} />
+            <boxGeometry args={[0.08, HEIGHT_DESK - 0.1, 0.08]} />
             <meshStandardMaterial color="#333" />
           </mesh>
         ))
@@ -27,8 +27,8 @@ function Workstation({ pos, rotation = 0 }: { pos: { x: number; y: number; z: nu
   return (
     <group position={[pos.x, pos.y, pos.z]} rotation={[0, rotation, 0]}>
       <Desk pos={{ x: 0, y: 0, z: 0 }} />
-      {/* 卓上機材 */}
-      <group position={[0.5, HEIGHT_DESK, 0]}>
+      {/* 卓上機材 (センター基準) */}
+      <group position={[0, HEIGHT_DESK, 0]}>
         <Monitor />
         <group position={[0, 0, 0.25]}>
           <Keyboard />
@@ -36,7 +36,7 @@ function Workstation({ pos, rotation = 0 }: { pos: { x: number; y: number; z: nu
         <group position={[0.35, 0.015, 0.25]}>
           <Mouse />
         </group>
-        <group position={[0.7, 0.225, -0.05]}>
+        <group position={[0.6, 0.225, -0.05]}>
           <PCCase />
         </group>
       </group>
@@ -111,7 +111,7 @@ export function OfficeFurniture() {
         const seatIdx = conf.zIdx * GRID_SIZE_X + conf.xIdx;
         const pos = getPositionFromSeat(seatIdx, 0);
         
-        const workstationZOffset = conf.chairRot === 0 ? 1.0 : -1.0;
+        const workstationZOffset = conf.chairRot === 0 ? -1.0 : 1.0;
         const workstationPos = { ...pos, z: pos.z + workstationZOffset };
 
         return (
