@@ -20,6 +20,9 @@ export const COLORS = {
   POT: '#a0522d',
   AVATAR_BLUE: '#3498db',
   AVATAR_SKIN: '#f3e5ab',
+  PENGUIN_BLACK: '#2f3640',
+  PENGUIN_WHITE: '#f5f6fa',
+  PENGUIN_YELLOW: '#fbc531',
 };
 
 // Z-Index (3D では主に Y 軸方向の重なりとして処理)
