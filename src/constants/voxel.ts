@@ -13,7 +13,6 @@ export const GRID_SIZE_Z = 12;
 export const COLORS = {
   FLOOR_DARK: '#2c3e50',
   FLOOR_LIGHT: '#34495e',
-  WALL: '#1a1a2e',
   DESK: '#7f8c8d',
   CHAIR: '#d35400', // オレンジ
   PLANT: '#27ae60',
@@ -23,6 +22,12 @@ export const COLORS = {
   PENGUIN_BLACK: '#2f3640',
   PENGUIN_WHITE: '#f5f6fa',
   PENGUIN_YELLOW: '#fbc531',
+  MONITOR: '#2d3436',
+  PC_CASE: '#636e72',
+  WALL: '#dfe6e9',
+  GLASS: '#81ecec',
+  KEYBOARD: '#f5f6fa',
+  MOUSE: '#2d3436',
 };
 
 // Z-Index (3D では主に Y 軸方向の重なりとして処理)

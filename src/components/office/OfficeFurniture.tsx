@@ -1,16 +1,17 @@
 import { useVoxelGrid } from '@/hooks/useVoxelGrid';
-import { COLORS, DESK_WIDTH, DESK_DEPTH, HEIGHT_DESK, HEIGHT_CHAIR_SEAT, VOXEL_SIZE, GRID_SIZE_X } from '@/constants/voxel';
+import { COLORS, DESK_DEPTH, HEIGHT_DESK, HEIGHT_CHAIR_SEAT, GRID_SIZE_X } from '@/constants/voxel';
+import { Monitor, PCCase, Keyboard, Mouse } from './OfficeEquipment';
 
 function Desk({ pos }: { pos: { x: number; y: number; z: number } }) {
   return (
     <group position={[pos.x, pos.y, pos.z]}>
-      {/* 天板 */}
+      {/* 天板 (2マス幅に拡張) */}
       <mesh castShadow receiveShadow position={[0.5, HEIGHT_DESK - 0.05, 0]}>
-        <boxGeometry args={[DESK_WIDTH, 0.1, DESK_DEPTH]} />
+        <boxGeometry args={[1.9, 0.1, DESK_DEPTH]} />
         <meshStandardMaterial color={COLORS.DESK} />
       </mesh>
       {/* 脚 */}
-      {[-0.4, 1.4].map((x) => 
+      {[-0.3, 1.3].map((x) => 
         [-0.3, 0.3].map((z) => (
           <mesh key={`${x}-${z}`} castShadow position={[x, (HEIGHT_DESK - 0.1) / 2, z]}>
             <boxGeometry args={[0.1, HEIGHT_DESK - 0.1, 0.1]} />
@@ -18,6 +19,27 @@ function Desk({ pos }: { pos: { x: number; y: number; z: number } }) {
           </mesh>
         ))
       )}
+    </group>
+  );
+}
+
+function Workstation({ pos, rotation = 0 }: { pos: { x: number; y: number; z: number }, rotation?: number }) {
+  return (
+    <group position={[pos.x, pos.y, pos.z]} rotation={[0, rotation, 0]}>
+      <Desk pos={{ x: 0, y: 0, z: 0 }} />
+      {/* 卓上機材 */}
+      <group position={[0.5, HEIGHT_DESK, 0]}>
+        <Monitor />
+        <group position={[0, 0, 0.25]}>
+          <Keyboard />
+        </group>
+        <group position={[0.35, 0.015, 0.25]}>
+          <Mouse />
+        </group>
+        <group position={[0.7, 0.225, -0.05]}>
+          <PCCase />
+        </group>
+      </group>
     </group>
   );
 }
@@ -55,7 +77,7 @@ function Chair({ pos, rotation = 0 }: { pos: { x: number; y: number; z: number }
         </mesh>
       ))}
 
-      {/* キャスター (Casters) - シンプルに脚の端に配置 */}
+      {/* キャスター (Casters) */}
       {[
         [0.22, 0.04, 0], [-0.22, 0.04, 0],
         [0, 0.04, 0.22], [0, 0.04, -0.22]
@@ -72,8 +94,8 @@ function Chair({ pos, rotation = 0 }: { pos: { x: number; y: number; z: number }
 export function OfficeFurniture() {
   const { getPositionFromSeat } = useVoxelGrid();
 
-  // デスクアイランド (3x2 = 6席)
-  // 島を構成する座席のベース座標からのオフセット
+  // デスクアイランド (2x3 = 6席)
+  // 1人あたり2マス分の幅を持たせる
   const islandConfig = [
     { xIdx: 3, zIdx: 4, chairRot: 0 },
     { xIdx: 5, zIdx: 4, chairRot: 0 },
@@ -89,17 +111,13 @@ export function OfficeFurniture() {
         const seatIdx = conf.zIdx * GRID_SIZE_X + conf.xIdx;
         const pos = getPositionFromSeat(seatIdx, 0);
         
-        // デスクは向かい合わせの間に置く
-        const deskZOffset = conf.chairRot === 0 ? 1.0 : -1.0;
-        const deskPos = { ...pos, z: pos.z + deskZOffset };
+        const workstationZOffset = conf.chairRot === 0 ? 1.0 : -1.0;
+        const workstationPos = { ...pos, z: pos.z + workstationZOffset };
 
         return (
           <group key={i}>
             <Chair pos={pos} rotation={conf.chairRot} />
-            {/* デスクは各列に1つずつ（2マス幅なので飛ばし飛ばしで配置が必要だが、
-                ここでは簡略化のため各座席の正面に置く。重なる部分は重複描画されるが
-                静的なので一旦許容。本来は i < 3 の時だけ描画等で制御すべき） */}
-            { i % 3 === 0 && <Desk pos={{ ...deskPos, x: deskPos.x + 0.5 }} /> }
+            <Workstation pos={workstationPos} rotation={conf.chairRot} />
           </group>
         );
       })}
