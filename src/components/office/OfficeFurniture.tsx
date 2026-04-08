@@ -5,15 +5,15 @@ function Desk({ pos }: { pos: { x: number; y: number; z: number } }) {
   return (
     <group position={[pos.x, pos.y, pos.z]}>
       {/* 天板 */}
-      <mesh castShadow receiveShadow position={[0.5, HEIGHT_DESK / 2, 0]}>
+      <mesh castShadow receiveShadow position={[0.5, HEIGHT_DESK - 0.05, 0]}>
         <boxGeometry args={[DESK_WIDTH, 0.1, DESK_DEPTH]} />
         <meshStandardMaterial color={COLORS.DESK} />
       </mesh>
       {/* 脚 */}
       {[-0.4, 1.4].map((x) => 
         [-0.3, 0.3].map((z) => (
-          <mesh key={`${x}-${z}`} castShadow position={[x, 0, z]}>
-            <boxGeometry args={[0.1, HEIGHT_DESK, 0.1]} />
+          <mesh key={`${x}-${z}`} castShadow position={[x, (HEIGHT_DESK - 0.1) / 2, z]}>
+            <boxGeometry args={[0.1, HEIGHT_DESK - 0.1, 0.1]} />
             <meshStandardMaterial color="#333" />
           </mesh>
         ))
@@ -23,23 +23,48 @@ function Desk({ pos }: { pos: { x: number; y: number; z: number } }) {
 }
 
 function Chair({ pos, rotation = 0 }: { pos: { x: number; y: number; z: number }, rotation?: number }) {
+  const seatThickness = 0.08;
+  const baseHeight = 0.05;
+  const stemHeight = HEIGHT_CHAIR_SEAT - seatThickness - baseHeight;
+
   return (
     <group position={[pos.x, pos.y, pos.z]} rotation={[0, rotation, 0]}>
       {/* 座面 */}
-      <mesh castShadow receiveShadow position={[0, HEIGHT_CHAIR_SEAT / 2, 0]}>
-        <boxGeometry args={[0.6, 0.1, 0.6]} />
+      <mesh castShadow receiveShadow position={[0, HEIGHT_CHAIR_SEAT - seatThickness / 2, 0]}>
+        <boxGeometry args={[0.55, seatThickness, 0.55]} />
         <meshStandardMaterial color={COLORS.CHAIR} />
       </mesh>
+      
       {/* 背もたれ */}
-      <mesh castShadow position={[0, HEIGHT_CHAIR_SEAT + 0.3, -0.25]}>
-        <boxGeometry args={[0.6, 0.6, 0.1]} />
+      <mesh castShadow position={[0, HEIGHT_CHAIR_SEAT + 0.3, -0.22]}>
+        <boxGeometry args={[0.5, 0.55, 0.08]} />
         <meshStandardMaterial color={COLORS.CHAIR} />
       </mesh>
-      {/* 脚 */}
-      <mesh position={[0, -0.15, 0]}>
-        <boxGeometry args={[0.1, 0.3, 0.1]} />
-        <meshStandardMaterial color="#111" />
+
+      {/* 支柱 (Stem) */}
+      <mesh castShadow position={[0, baseHeight + stemHeight / 2, 0]}>
+        <boxGeometry args={[0.08, stemHeight, 0.08]} />
+        <meshStandardMaterial color="#2c3e50" />
       </mesh>
+
+      {/* ベース (Legs Base) */}
+      {[0, Math.PI / 2].map((rot, i) => (
+        <mesh key={i} castShadow position={[0, baseHeight / 2 + 0.05, 0]} rotation={[0, rot, 0]}>
+          <boxGeometry args={[0.5, baseHeight, 0.1]} />
+          <meshStandardMaterial color="#1a1a1a" />
+        </mesh>
+      ))}
+
+      {/* キャスター (Casters) - シンプルに脚の端に配置 */}
+      {[
+        [0.22, 0.04, 0], [-0.22, 0.04, 0],
+        [0, 0.04, 0.22], [0, 0.04, -0.22]
+      ].map((p, i) => (
+        <mesh key={i} position={[p[0], p[1], p[2]]}>
+          <boxGeometry args={[0.08, 0.08, 0.08]} />
+          <meshStandardMaterial color="#000" />
+        </mesh>
+      ))}
     </group>
   );
 }

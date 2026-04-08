@@ -18,7 +18,7 @@ export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
   }
 
   return (
-    <group ref={groupRef} position={[pos.x, 0.5, pos.z]}>
+    <group ref={groupRef} position={[pos.x, pos.y, pos.z]}>
       {/* アバターの外見（子要素として注入） */}
       {children}
 

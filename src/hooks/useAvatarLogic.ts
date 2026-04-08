@@ -23,7 +23,7 @@ export function useAvatarLogic(occupant: SeatOccupant, voiceState?: VoiceState) 
   useFrame((state) => {
     if (groupRef.current && pos) {
       // わずかに上下に呼吸しているような動き
-      groupRef.current.position.y = 0.5 + Math.sin(state.clock.elapsedTime * 1.5) * 0.02;
+      groupRef.current.position.y = pos.y + Math.sin(state.clock.elapsedTime * 1.5) * 0.02;
     }
   });
 

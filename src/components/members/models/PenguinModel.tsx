@@ -18,19 +18,19 @@ export function PenguinModel({
   return (
     <group>
       {/* 胴体 */}
-      <mesh name="Body" castShadow position={[0, 0.45, 0]} scale={[0.85, 1.6, 1]}>
+      <mesh name="Body" castShadow position={[0, 0.4, 0]} scale={[0.85, 1.6, 1]}>
         <boxGeometry args={[0.45, 0.5, 0.35]} />
         <meshStandardMaterial color={color} />
       </mesh>
 
       {/* お腹 */}
-      <mesh name="Belly" castShadow position={[0, 0.35, 0.16]} scale={[0.7, 1, 1]}>
+      <mesh name="Belly" castShadow position={[0, 0.3, 0.16]} scale={[0.7, 1, 1]}>
         <boxGeometry args={[0.35, 0.4, 0.05]} />
         <meshStandardMaterial color={COLORS.PENGUIN_WHITE} />
       </mesh>
 
       {/* くちばし */}
-      <mesh name="Beak" castShadow position={[0, 0.65, 0.18]} scale={[1, 0.75, 1]}>
+      <mesh name="Beak" castShadow position={[0, 0.6, 0.18]} scale={[1, 0.75, 1]}>
         <boxGeometry args={[0.12, 0.08, 0.12]} />
         <meshStandardMaterial color={COLORS.PENGUIN_YELLOW} />
       </mesh>
@@ -38,20 +38,20 @@ export function PenguinModel({
       {/* 目 (Eyes) */}
       <group name="Eyes">
         {/* 白目 */}
-        <mesh name="EyeWhite_R" castShadow position={[0.08, 0.75, 0.16]} scale={[1.25, 1.8, 1]}>
+        <mesh name="EyeWhite_R" castShadow position={[0.08, 0.7, 0.16]} scale={[1.25, 1.8, 1]}>
           <boxGeometry args={[0.04, 0.04, 0.04]} />
           <meshStandardMaterial color={COLORS.PENGUIN_WHITE} />
         </mesh>
-        <mesh name="EyeWhite_L" castShadow position={[-0.08, 0.75, 0.16]} scale={[1.25, 1.8, 1]}>
+        <mesh name="EyeWhite_L" castShadow position={[-0.08, 0.7, 0.16]} scale={[1.25, 1.8, 1]}>
           <boxGeometry args={[0.04, 0.04, 0.04]} />
           <meshStandardMaterial color={COLORS.PENGUIN_WHITE} />
         </mesh>
         {/* 黒目 */}
-        <mesh name="Pupil_R" castShadow position={[0.08, 0.75, 0.18]} scale={[1.6, 1.6, 1]}>
+        <mesh name="Pupil_R" castShadow position={[0.08, 0.7, 0.18]} scale={[1.6, 1.6, 1]}>
           <boxGeometry args={[0.02, 0.02, 0.02]} />
           <meshStandardMaterial color={COLORS.PENGUIN_BLACK} />
         </mesh>
-        <mesh name="Pupil_L" castShadow position={[-0.08, 0.75, 0.18]} scale={[1.6, 1.6, 1]}>
+        <mesh name="Pupil_L" castShadow position={[-0.08, 0.7, 0.18]} scale={[1.6, 1.6, 1]}>
           <boxGeometry args={[0.02, 0.02, 0.02]} />
           <meshStandardMaterial color={COLORS.PENGUIN_BLACK} />
         </mesh>
