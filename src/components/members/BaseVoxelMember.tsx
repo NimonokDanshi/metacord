@@ -28,6 +28,7 @@ export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
         center
         occlude={false}
         className="pointer-events-none select-none"
+        zIndexRange={[100, 0]}
       >
         <div className="flex flex-col items-center gap-1">
           {/* プロフィールアイコン */}

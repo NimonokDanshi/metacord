@@ -12,7 +12,7 @@ export function VoxelModal({ isOpen, onClose, title, children }: Props) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
         className="relative bg-[#1a1a2e] border-4 border-[#4cc9f0] shadow-[8px_8px_0_0_#4361ee] max-w-2xl w-full flex flex-col"
         style={{
