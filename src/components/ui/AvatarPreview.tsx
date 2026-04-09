@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrthographicCamera, ContactShadows } from '@react-three/drei';
+import { Stage, Center } from '@react-three/drei';
 
 interface Props {
   component: React.ComponentType<any>;
@@ -8,34 +8,31 @@ interface Props {
 
 /**
  * AvatarPreview
- * モーダル内で個別の3Dアバターを表示するための軽量なプレビューコンポーネント
+ * モーダル内で個別の3Dアバターを表示するためのプレビューコンポーネント
+ * Stageコンポーネントを使用して、サイズに関わらずモデルを自動調整して表示します。
  */
 export function AvatarPreview({ component: AvatarModel }: Props) {
   return (
     <div className="w-full h-full">
-      <Canvas shadows camera={{ position: [5, 5, 5], zoom: 50 }}>
-        <OrthographicCamera
-          makeDefault
-          position={[5, 4, 5]}
-          zoom={50}
-        />
-        
-        {/* 照明 - 少し明るめに設定 */}
-        <ambientLight intensity={1.5} />
-        <directionalLight position={[2, 5, 2]} intensity={1.5} />
-        
-        <group position={[0, -0.4, 0]}>
-          <AvatarModel isSitting={false} />
-        </group>
-
-        <ContactShadows
-          opacity={0.4}
-          scale={5}
-          blur={2.4}
-          far={10}
-          resolution={128}
-          color="#000000"
-        />
+      <Canvas 
+        shadows 
+        orthographic 
+        camera={{ position: [5, 5, 5], zoom: 40 }}
+        gl={{ antialias: true, alpha: true }}
+      >
+        <Suspense fallback={null}>
+          {/* Stageはモデルのサイズを計測して自動的にカメラと照明を調整してくれます */}
+          <Stage 
+            intensity={0.5} 
+            environment={null} 
+            adjustCamera={1.2} // 1.2倍の余裕を持ってフィットさせる
+            shadows="contact"
+          >
+            <Center>
+              <AvatarModel isSitting={false} />
+            </Center>
+          </Stage>
+        </Suspense>
       </Canvas>
     </div>
   );
