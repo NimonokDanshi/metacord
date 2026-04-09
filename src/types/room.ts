@@ -6,6 +6,11 @@
  */
 
 /**
+ * 利用可能なアバターの種類
+ */
+export type AvatarType = 'default' | 'penguin';
+
+/**
  * Supabase Presenceチャンネルに送信する在室データ
  * 1ユーザー = 1エントリ
  */
@@ -18,6 +23,8 @@ export interface PresencePayload {
   avatar_url: string | null;
   /** 着席しているシート番号 (0 〜 GRID_COLS * GRID_ROWS - 1) */
   seat_index: number;
+  /** アバターの種類 */
+  avatar_type: AvatarType;
   /** 入室日時 */
   joined_at: string;
 }

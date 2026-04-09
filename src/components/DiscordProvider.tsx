@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { discordSdk, setupDiscordProxy } from '@/lib/discord';
 import { useDiscordStore } from '@/store/discordStore';
-import { DiscordUser, DiscordChannel, VoiceState } from '@/types/discord';
-
-
+import { DiscordUser, DiscordChannel, VoiceState, getDiscordAvatarUrl } from '@/types/discord';
+import { supabase } from '@/lib/supabase';
+import { AvatarType } from '@/types/room';
 
 import DebugOverlay from './DebugOverlay';
 
@@ -14,9 +14,9 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
   const [error, setError] = useState<string | null>(null);
   const {
     user, instanceId, channelId, guildId, voiceStates, isReady,
-    rawChannelData, logMessages,
+    rawChannelData, logMessages, avatarType,
     setUser, setReady, setInfo, setVoiceStates, updateVoiceState, removeVoiceState,
-    setRawChannelData, addLogMessage
+    setRawChannelData, addLogMessage, setAvatarType
   } = useDiscordStore();
 
   // 簡易ログ出力関数
@@ -88,6 +88,30 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
         };
         setUser(discordUser);
 
+        // Supabase のプロフィール同期
+        if (supabase) {
+          log('Supabase プロフィール同期中...');
+          const { data: upsertedUser, error: upsertError } = await (supabase.from('m_users') as any)
+            .upsert({
+              user_id: discordUser.id,
+              display_name: discordUser.global_name || discordUser.username,
+              discord_avatar_url: getDiscordAvatarUrl(discordUser),
+              // 新規ユーザーの場合は初期値を penguin にしてみる（お好みで）
+              last_seen_at: new Date().toISOString(),
+            }, { onConflict: 'user_id' })
+            .select()
+            .single();
+
+          if (upsertError) {
+            log('Supabase 同期エラー:', upsertError.message);
+          } else if (upsertedUser) {
+            log('Supabase 同期成功:', (upsertedUser as any).avatar_id);
+            if ((upsertedUser as any).avatar_id) {
+              setAvatarType((upsertedUser as any).avatar_id as AvatarType);
+            }
+          }
+        }
+
         // チャンネル情報を取得してストアを更新する関数
         const fetchChannelData = async () => {
           if (!discordSdk?.channelId) return;
@@ -95,11 +119,11 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
             const channel = await discordSdk.commands.getChannel({
               channel_id: discordSdk.channelId
             });
-            log('同期ログ: チャンネル情報を取得しました', { statesCount: channel.voice_states?.length });
+            log('同期ログ: チャンネル情報を取得しました', { statesCount: (channel as DiscordChannel).voice_states?.length });
             setRawChannelData(channel);
 
-            if (channel.voice_states) {
-              setVoiceStates(channel.voice_states);
+            if ((channel as DiscordChannel).voice_states) {
+              setVoiceStates((channel as DiscordChannel).voice_states);
             }
           } catch (e: any) {
             log('同期エラー: チャンネル情報の取得に失敗', e.message);
@@ -151,7 +175,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
     }
 
     setupDiscord();
-  }, [setUser, setReady, setInfo, setVoiceStates, updateVoiceState, removeVoiceState]);
+  }, [setUser, setReady, setInfo, setVoiceStates, updateVoiceState, removeVoiceState, setAvatarType, setRawChannelData]);
 
   // エラー画面
   if (error) {

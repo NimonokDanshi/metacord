@@ -25,7 +25,7 @@ function pickEmptySeat(occupiedSeats: Set<number>): number {
 }
 
 export function useRoom() {
-  const { user, instanceId, channelId } = useDiscordStore();
+  const { user, instanceId, channelId, avatarType } = useDiscordStore();
   const {
     setOccupants,
     upsertOccupant,
@@ -67,6 +67,7 @@ export function useRoom() {
           display_name: payload.display_name,
           avatar_url: payload.avatar_url,
           seat_index: payload.seat_index,
+          avatar_type: payload.avatar_type,
         });
       }
       setOccupants(next);
@@ -81,6 +82,7 @@ export function useRoom() {
           display_name: payload.display_name,
           avatar_url: payload.avatar_url,
           seat_index: payload.seat_index,
+          avatar_type: payload.avatar_type,
         });
       }
     });
@@ -125,6 +127,7 @@ export function useRoom() {
           display_name: displayName,
           avatar_url: avatarUrl,
           seat_index: seatIndex,
+          avatar_type: avatarType,
           joined_at: new Date().toISOString(),
         };
         
@@ -139,5 +142,5 @@ export function useRoom() {
       channel.unsubscribe();
       channelRef.current = null;
     };
-  }, [user, instanceId, channelId, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setConnected]);
+  }, [user, instanceId, channelId, avatarType, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setConnected]);
 }

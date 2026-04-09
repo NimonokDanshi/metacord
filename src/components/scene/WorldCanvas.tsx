@@ -11,13 +11,16 @@ import { useRoom } from '@/hooks/useRoom';
 import { useRoomStore } from '@/store/roomStore';
 import { useDiscordStore } from '@/store/discordStore';
 import { getDiscordAvatarUrl } from '@/types/discord';
-import { SeatOccupant } from '@/types/room';
+import { SeatOccupant, AvatarType } from '@/types/room';
+import { VoxelModal } from '../ui/VoxelModal';
+import { AvatarSelector } from '../ui/AvatarSelector';
 
 export function WorldCanvas() {
   // Supabase/Presence の同期を開始
   useRoom();
   const occupants = useRoomStore((state) => state.occupants);
   const { voiceStates, addLogMessage } = useDiscordStore();
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
 
   // 統合されたメンバーリストを作成
   const mergedMembers = React.useMemo(() => {
@@ -63,6 +66,7 @@ export function WorldCanvas() {
           display_name: vs.user.global_name || vs.user.username,
           avatar_url: getDiscordAvatarUrl(vs.user),
           seat_index: finalSeat,
+          avatar_type: 'default' as AvatarType,
         };
         list.push({ occupant: syntheticOccupant, voiceState: vs });
         occupiedSeatsInList.add(finalSeat);
@@ -73,7 +77,33 @@ export function WorldCanvas() {
   }, [occupants, voiceStates]);
 
   return (
-    <div className="w-full h-full bg-[#1a1a2e]">
+    <div className="relative w-full h-full bg-[#1a1a2e]">
+      {/* UI Overlay */}
+      <div className="absolute top-6 right-6 z-[50] flex flex-col gap-4 items-end">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="group relative cursor-pointer"
+        >
+          {/* Voxel-artish Button Label */}
+          <div className="bg-[#4cc9f0] border-4 border-[#4361ee] px-6 py-2 shadow-[4px_4px_0_0_#3f37c9] group-hover:translate-y-1 group-hover:shadow-none transition-all">
+            <span className="text-white font-black text-xl tracking-[0.2em] uppercase drop-shadow-[2px_2px_0_#4361ee]">
+              Avatar
+            </span>
+          </div>
+          {/* Tiny pixels decoration */}
+          <div className="absolute -top-1 -left-1 w-2 h-2 bg-white/40" />
+          <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white/40" />
+        </button>
+      </div>
+
+      <VoxelModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title="Select Your Avatar"
+      >
+        <AvatarSelector />
+      </VoxelModal>
+
       <Canvas shadows gl={{ antialias: true, stencil: false }}>
         {/* Unrailed! 風の固定カメラ視点 (正投影) */}
         <OrthographicCamera

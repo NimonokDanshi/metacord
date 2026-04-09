@@ -15,10 +15,20 @@ interface Props {
  * プロジェクト標準のアトラスやポーズを選択して、アバターを組み立てる。
  */
 export function VoxelMember({ occupant, voiceState }: Props) {
-  // デバッグ用に一旦ペンギンを表示
+  // アバタータイプに基づいて描画するモデルを切り替え
+  const renderModel = () => {
+    switch (occupant.avatar_type) {
+      case 'penguin':
+        return <PenguinModel isSitting={true} />;
+      case 'default':
+      default:
+        return <DefaultAvatarModel isSitting={true} />;
+    }
+  };
+
   return (
     <BaseVoxelMember occupant={occupant} voiceState={voiceState}>
-      <PenguinModel isSitting={true} />
+      {renderModel()}
     </BaseVoxelMember>
   );
 }
