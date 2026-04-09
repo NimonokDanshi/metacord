@@ -4,12 +4,11 @@ const discordClientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 
 // ブラウザ環境かつ、frame_id が URL パラメータに存在するかチェック
-// Discord Activity 外（普通のブラウザなど）で起動した場合のクラッシュを防ぐ
 const isBrowser = typeof window !== 'undefined';
 const hasFrameId = isBrowser && new URLSearchParams(window.location.search).has('frame_id');
 
 export const discordSdk = (isBrowser && hasFrameId)
-    ? new DiscordSDK(discordClientId)
+    ? new DiscordSDK(discordClientId || 'mock-id')
     : null;
 
 /**
