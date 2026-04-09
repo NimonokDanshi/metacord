@@ -28,6 +28,8 @@ export const COLORS = {
   GLASS: '#81ecec',
   KEYBOARD: '#f5f6fa',
   MOUSE: '#2d3436',
+  CAT_GREY: '#95a5a6',
+  CAT_PINK: '#ffafcc',
 };
 
 // Z-Index (3D では主に Y 軸方向の重なりとして処理)
