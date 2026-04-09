@@ -23,8 +23,8 @@ export function AvatarPreview({ component: AvatarModel }: Props) {
         <Suspense fallback={null}>
           {/* Stageはモデルのサイズを計測して自動的にカメラと照明を調整してくれます */}
           <Stage 
-            intensity={0.5} 
-            environment={null} 
+            intensity={1.5} 
+            environment="city" 
             adjustCamera={1.2} // 1.2倍の余裕を持ってフィットさせる
             shadows="contact"
           >
