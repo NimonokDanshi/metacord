@@ -1,7 +1,6 @@
 import React from 'react';
 import { BaseVoxelMember } from './BaseVoxelMember';
-import { DefaultAvatarModel } from './models/DefaultAvatarModel';
-import { PenguinModel } from './models/PenguinModel';
+import { getAvatarComponent } from '@/registry/avatarModels';
 import type { SeatOccupant } from '@/types/room';
 import type { VoiceState } from '@/types/discord';
 
@@ -15,20 +14,12 @@ interface Props {
  * プロジェクト標準のアトラスやポーズを選択して、アバターを組み立てる。
  */
 export function VoxelMember({ occupant, voiceState }: Props) {
-  // アバタータイプに基づいて描画するモデルを切り替え
-  const renderModel = () => {
-    switch (occupant.avatar_type) {
-      case 'penguin':
-        return <PenguinModel isSitting={true} />;
-      case 'default':
-      default:
-        return <DefaultAvatarModel isSitting={true} />;
-    }
-  };
+  // レジストリからモデルコンポーネントを取得
+  const AvatarModel = getAvatarComponent(occupant.avatar_type);
 
   return (
     <BaseVoxelMember occupant={occupant} voiceState={voiceState}>
-      {renderModel()}
+      <AvatarModel isSitting={true} />
     </BaseVoxelMember>
   );
 }

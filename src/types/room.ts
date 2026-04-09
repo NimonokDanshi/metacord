@@ -6,9 +6,9 @@
  */
 
 /**
- * 利用可能なアバターの種類
+ * 利用可能なアバターの種類 (拡張性のため string としている)
  */
-export type AvatarType = 'default' | 'penguin';
+export type AvatarType = string;
 
 /**
  * Supabase Presenceチャンネルに送信する在室データ

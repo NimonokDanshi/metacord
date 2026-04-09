@@ -3,23 +3,8 @@ import { VoxelButton } from './VoxelButton';
 import { useDiscordStore } from '@/store/discordStore';
 import { AvatarType } from '@/types/room';
 import { supabase } from '@/lib/supabase';
-
-interface AvatarItem {
-  id: AvatarType;
-  name: string;
-  description: string;
-}
-
-const AVATARS: AvatarItem[] = [
-  { id: 'default', name: 'Standard Bot', description: 'The classic blue voxel bot.' },
-  { id: 'penguin', name: 'Polar Penguin', description: 'A chilly friend from the south pole.' },
-  { id: 'default', name: 'Locked', description: 'Coming soon...' },
-  { id: 'default', name: 'Locked', description: 'Coming soon...' },
-  { id: 'default', name: 'Locked', description: 'Coming soon...' },
-  { id: 'default', name: 'Locked', description: 'Coming soon...' },
-  { id: 'default', name: 'Locked', description: 'Coming soon...' },
-  { id: 'default', name: 'Locked', description: 'Coming soon...' },
-];
+import { AVATAR_REGISTRY } from '@/registry/avatarModels';
+import { AvatarPreview } from './AvatarPreview';
 
 export function AvatarSelector() {
   const { user, avatarType, setAvatarType, addLogMessage } = useDiscordStore();
@@ -45,11 +30,22 @@ export function AvatarSelector() {
     }
   };
 
+  // 表示用にグリッドを埋める (空きはLockedとして表示)
+  const displayAvatars = [...AVATAR_REGISTRY];
+  while (displayAvatars.length < 8) {
+    displayAvatars.push({
+      id: 'locked',
+      name: 'Coming soon...',
+      description: 'More avatars are under development.',
+      component: () => null
+    });
+  }
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-      {AVATARS.map((avatar, index) => {
-        const isSelected = avatarType === avatar.id && avatar.name !== 'Locked';
-        const isLocked = avatar.name === 'Locked';
+      {displayAvatars.map((avatar, index) => {
+        const isSelected = avatarType === avatar.id;
+        const isLocked = avatar.id === 'locked';
 
         return (
           <div 
@@ -60,26 +56,24 @@ export function AvatarSelector() {
               : "bg-black/20 border-white/10 hover:border-white/30"
             } ${isLocked ? "opacity-50 grayscale" : ""}`}
           >
-            {/* Preview Placeholder */}
-            <div className={`aspect-square mb-3 flex items-center justify-center bg-black/40 border-2 border-white/5`}>
-              {avatar.id === 'penguin' ? (
-                <span className="text-4xl">🐧</span>
-              ) : avatar.id === 'default' && avatar.name !== 'Locked' ? (
-                <span className="text-4xl">🤖</span>
+            {/* 3D Preview */}
+            <div className={`aspect-square mb-3 flex items-center justify-center bg-black/40 border-2 border-white/5 overflow-hidden`}>
+              {!isLocked ? (
+                <AvatarPreview component={avatar.component} />
               ) : (
                 <span className="text-4xl">🔒</span>
               )}
             </div>
 
-            <h3 className="text-white font-bold text-sm mb-1 truncate">{avatar.name}</h3>
-            <p className="text-white/40 text-[10px] leading-tight h-8 overflow-hidden mb-3">
+            <h3 className="text-white font-bold text-[11px] mb-1 truncate uppercase tracking-tighter">{avatar.name}</h3>
+            <p className="text-white/40 text-[9px] leading-tight h-8 overflow-hidden mb-3">
               {avatar.description}
             </p>
 
             <VoxelButton 
               disabled={isLocked || isSelected}
               variant={isSelected ? "primary" : "secondary"}
-              className="w-full !text-[10px] !py-1"
+              className="w-full !text-[9px] !py-1"
               onClick={() => handleSelect(avatar.id)}
             >
               {isSelected ? "SELECTED" : isLocked ? "LOCKED" : "SELECT"}
