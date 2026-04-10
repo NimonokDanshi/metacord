@@ -55,7 +55,10 @@ export function getDiscordAvatarUrl(user: DiscordUser, size: number = 128): stri
   try {
     // アバター未設定の場合はデフォルト画像
     // 公式推奨: (BigInt(user.id) >> 22n) % 6n
-    // IDが極端に大きい場合の計算で例外が出るのを防ぐ
+    // IDが数字ではない場合（モックIDなど）の計算失敗を防ぐ
+    if (!/^\d+$/.test(user.id)) {
+      return `https://cdn.discordapp.com/embed/avatars/0.png`;
+    }
     const userIdBigInt = BigInt(user.id);
     const defaultAvatarIndex = Number((userIdBigInt >> 22n) % 6n);
     return `https://cdn.discordapp.com/embed/avatars/${defaultAvatarIndex}.png`;

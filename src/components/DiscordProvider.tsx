@@ -41,7 +41,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
         const setupMockUser = async () => {
           log('開発者モード: ダミーユーザーを設定します');
           const mockUser: DiscordUser = {
-            id: 'dev-user-1234',
+            id: '12345',
             username: 'Develop-kun',
             discriminator: '0000',
             avatar: null,
@@ -53,6 +53,38 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
             channelId: 'local-channel',
             guildId: 'local-guild',
           });
+
+          // 開発用ダミー参加者の追加（ボイスチャンネルに複数人いる状態をシミュレート）
+          setVoiceStates([
+            {
+              mute: false,
+              nick: mockUser.global_name || mockUser.username,
+              user: mockUser,
+              voice_state: { mute: false, deaf: false, self_mute: false, self_deaf: false, suppress: false },
+              volume: 100
+            },
+            {
+              mute: false,
+              nick: 'Pingu (Mock)',
+              user: { 
+                id: '55555', username: 'pingu', discriminator: '0000', global_name: 'Pingu (Mock)' ,
+                mock_avatar_type: 'penguin' 
+              } as any,
+              voice_state: { mute: false, deaf: false, self_mute: false, self_deaf: false, suppress: false },
+              volume: 100
+            },
+            {
+              mute: false,
+              nick: 'Tama (Mock)',
+              user: { 
+                id: '88888', username: 'cat', discriminator: '0000', global_name: 'Tama (Mock)',
+                mock_avatar_type: 'cat'
+              } as any,
+              voice_state: { mute: false, deaf: false, self_mute: false, self_deaf: false, suppress: false },
+              volume: 100
+            }
+          ]);
+
 
           // Supabaseへのダミー登録（アバター選択などを試せるように）
           if (supabase) {

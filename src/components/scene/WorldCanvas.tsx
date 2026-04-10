@@ -2,6 +2,7 @@
 
 import React, { Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
+import * as THREE from 'three';
 import { OrthographicCamera, ContactShadows, OrbitControls } from '@react-three/drei';
 import { COLORS } from '@/constants/voxel';
 import { VoxelRoom } from '../office/VoxelRoom';
@@ -66,7 +67,7 @@ export function WorldCanvas() {
           display_name: vs.user.global_name || vs.user.username,
           avatar_url: getDiscordAvatarUrl(vs.user),
           seat_index: finalSeat,
-          avatar_type: 'default' as AvatarType,
+          avatar_type: ((vs.user as any).mock_avatar_type as AvatarType) || 'default',
         };
         list.push({ occupant: syntheticOccupant, voiceState: vs });
         occupiedSeatsInList.add(finalSeat);
@@ -104,7 +105,7 @@ export function WorldCanvas() {
         <AvatarSelector />
       </VoxelModal>
 
-      <Canvas shadows gl={{ antialias: true, stencil: false }}>
+      <Canvas shadows={{ type: THREE.PCFShadowMap }} gl={{ antialias: true, stencil: false }}>
         {/* Unrailed! 風の固定カメラ視点 (正投影) */}
         <OrthographicCamera
           makeDefault
