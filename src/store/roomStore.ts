@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { SeatOccupant } from '@/types/room';
+import { Furniture } from '@/features/room/types/furniture';
 
 interface RoomStore {
   /** 現在の在室者リスト（user_id → SeatOccupant） */
@@ -29,6 +30,18 @@ interface RoomStore {
   /** 現在使用中のseat_indexの集合を返すゲッター */
   getOccupiedSeats: () => Set<number>;
 
+  // --- 家具配置データ ---
+  /** 配置済みの家具リスト */
+  furnitures: Furniture[];
+  /** 家具リストを更新 */
+  setFurnitures: (furnitures: Furniture[]) => void;
+  /** 家具を追加 */
+  addFurniture: (furniture: Furniture) => void;
+  /** 家具を削除 */
+  removeFurniture: (id: string) => void;
+  /** 占有済みのグリッド ("x,z"形式) の集合を返す */
+  getOccupiedGrids: () => Set<string>;
+
   // --- 編集モード関連 ---
   /** 編集モード中かどうか */
   isEditing: boolean;
@@ -53,7 +66,8 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   // 編集モード初期値
   isEditing: false,
   selectedItemId: null,
-  previewPosition: null,
+  // 家具データの初期値
+  furnitures: [],
 
   setOccupants: (occupants) => set({ occupants }),
 
@@ -78,6 +92,19 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     const seats = new Set<number>();
     get().occupants.forEach((o) => seats.add(o.seat_index));
     return seats;
+  },
+
+  // 家具アクション
+  setFurnitures: (furnitures) => set({ furnitures }),
+  addFurniture: (f) => set((s) => ({ furnitures: [...s.furnitures, f] })),
+  removeFurniture: (id) => set((s) => ({ furnitures: s.furnitures.filter(f => f.id !== id) })),
+  getOccupiedGrids: () => {
+    const occupied = new Set<string>();
+    // TODO: 家具のサイズ（items.ts）を参照して全マスを埋める必要があるが、現状は原点のみ
+    get().furnitures.forEach(f => {
+      occupied.add(`${f.pos_x},${f.pos_z}`);
+    });
+    return occupied;
   },
 
   // 編集モードアクション

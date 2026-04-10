@@ -6,12 +6,14 @@ import { useRoomStore } from '@/store/roomStore';
 import { useVoxelGrid } from '@/hooks/useVoxelGrid';
 import { ROOM_ITEMS } from '../../constants/items';
 import { DynamicFurniture } from '@/features/office/components/DynamicFurniture';
+import { useRoomEditor } from '../../hooks/useRoomEditor';
 import { Html } from '@react-three/drei';
 
 export function PlacementPreview() {
-  const { isEditing, selectedItemId, previewPosition, setPreviewPosition } = useRoomStore();
+  const { isEditing, selectedItemId, previewPosition, setPreviewPosition, setSelectedItem } = useRoomStore();
   const { getGridFromWorld, getWorldFromGrid, checkCollision } = useVoxelGrid();
-  const { raycaster, mouse, camera } = useThree();
+  const { saveFurniture } = useRoomEditor();
+  const { raycaster, mouse, camera, gl } = useThree();
   const [canPlace, setCanPlace] = useState(false);
 
   // 選択中のアイテム情報を取得
@@ -70,24 +72,36 @@ export function PlacementPreview() {
       {/* 配置決定・キャンセルボタン (ラストウォー風) */}
       {canPlace && (
         <Html position={[0, 2, 0]} center>
-          <div className="flex gap-4">
+          <div className="flex gap-4 pointer-events-auto">
             <button 
-              onClick={(e) => {
+              onClick={async (e) => {
+                e.preventDefault();
                 e.stopPropagation();
-                console.log('Place item:', selectedItem.id, 'at', previewPosition);
-                // TODO: タスク6で保存ロジックを追加
+                if (!selectedItem || !previewPosition) return;
+                
+                const { data, error } = await saveFurniture(
+                  selectedItem.id, 
+                  previewPosition[0], 
+                  previewPosition[1], 
+                  0 // TODO: 回転機能を追加したい場合はここを可変にする
+                );
+                
+                if (!error) {
+                  // 配置成功したら選択を解除
+                  setSelectedItem(null);
+                }
               }}
-              className="w-12 h-12 bg-[#4cc9f0] border-4 border-white shadow-[4px_4px_0_0_#3f37c9] flex items-center justify-center hover:scale-110 transition-transform"
+              className="w-12 h-12 bg-[#4cc9f0] border-4 border-white shadow-[4px_4px_0_0_#3f37c9] flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
             >
               <span className="text-white font-black text-2xl">✓</span>
             </button>
             <button 
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
-                const { setSelectedItem } = useRoomStore.getState();
                 setSelectedItem(null);
               }}
-              className="w-12 h-12 bg-[#ff4d6d] border-4 border-white shadow-[4px_4px_0_0_#a4133c] flex items-center justify-center hover:scale-110 transition-transform"
+              className="w-12 h-12 bg-[#ff4d6d] border-4 border-white shadow-[4px_4px_0_0_#a4133c] flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
             >
               <span className="text-white font-black text-2xl">×</span>
             </button>
