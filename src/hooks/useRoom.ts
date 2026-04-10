@@ -8,6 +8,7 @@ import { useRoomStore } from '@/store/roomStore';
 import type { PresencePayload, SeatOccupant } from '@/types/room';
 import { getDiscordAvatarUrl } from '@/types/discord';
 import { GRID_SIZE_X, GRID_SIZE_Z } from '@/constants/voxel';
+import { Furniture } from '@/features/room/types/furniture';
 
 const MAX_SEATS = GRID_SIZE_X * GRID_SIZE_Z;
 const ISLAND_SEATS = [51, 53, 55, 87, 89, 91];
@@ -32,6 +33,9 @@ export function useRoom() {
     removeOccupant,
     setMySeatIndex,
     setConnected,
+    setFurnitures,
+    addFurniture,
+    removeFurniture,
   } = useRoomStore();
   const channelRef = useRef<RealtimeChannel | null>(null);
 
@@ -95,6 +99,54 @@ export function useRoom() {
       }
     });
 
+    // --- 家具データの同期設定 ---
+    const furnitureChannel = supabase
+      .channel(`${roomKey}:furniture`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 't_server_furniture',
+          filter: `server_id=eq.${channelId || instanceId}`,
+        },
+        (payload) => {
+          console.log('[useRoom] Furniture Inserted:', payload.new);
+          addFurniture(payload.new as Furniture);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 't_server_furniture',
+        },
+        (payload) => {
+          console.log('[useRoom] Furniture Deleted:', payload.old);
+          if (payload.old.id) {
+            removeFurniture(payload.old.id);
+          }
+        }
+      )
+      .subscribe();
+
+    // 初期家具データのロード
+    const fetchFurnitures = async () => {
+      const roomId = channelId || instanceId;
+      if (!roomId) return;
+      
+      const { data, error } = await supabase
+        .from('t_server_furniture')
+        .select('*')
+        .eq('server_id', roomId);
+        
+      if (!error && data) {
+        setFurnitures(data);
+      }
+    };
+    fetchFurnitures();
+
     channel.subscribe(async (status) => {
       console.log(`[useRoom] サブスクリプションステータス: ${status}`);
       
@@ -140,7 +192,8 @@ export function useRoom() {
       setConnected(false);
       setMySeatIndex(null);
       channel.unsubscribe();
+      furnitureChannel.unsubscribe();
       channelRef.current = null;
     };
-  }, [user, instanceId, channelId, avatarType, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setConnected]);
+  }, [user, instanceId, channelId, avatarType, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setConnected, setFurnitures, addFurniture, removeFurniture]);
 }
