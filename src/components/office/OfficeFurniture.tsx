@@ -2,7 +2,7 @@ import { useVoxelGrid } from '@/hooks/useVoxelGrid';
 import { COLORS, DESK_DEPTH, HEIGHT_DESK, HEIGHT_CHAIR_SEAT, GRID_SIZE_X } from '@/constants/voxel';
 import { Monitor, PCCase, Keyboard, Mouse } from './OfficeEquipment';
 
-function Desk({ pos }: { pos: { x: number; y: number; z: number } }) {
+export function Desk({ pos }: { pos: { x: number; y: number; z: number } }) {
   return (
     <group position={[pos.x, pos.y, pos.z]}>
       {/* 天板 (センター配置) */}
@@ -23,7 +23,7 @@ function Desk({ pos }: { pos: { x: number; y: number; z: number } }) {
   );
 }
 
-function Workstation({ pos, rotation = 0 }: { pos: { x: number; y: number; z: number }, rotation?: number }) {
+export function Workstation({ pos, rotation = 0 }: { pos: { x: number; y: number; z: number }, rotation?: number }) {
   return (
     <group position={[pos.x, pos.y, pos.z]} rotation={[0, rotation, 0]}>
       <Desk pos={{ x: 0, y: 0, z: 0 }} />
@@ -44,7 +44,7 @@ function Workstation({ pos, rotation = 0 }: { pos: { x: number; y: number; z: nu
   );
 }
 
-function Chair({ pos, rotation = 0 }: { pos: { x: number; y: number; z: number }, rotation?: number }) {
+export function Chair({ pos, rotation = 0 }: { pos: { x: number; y: number; z: number }, rotation?: number }) {
   const seatThickness = 0.08;
   const baseHeight = 0.05;
   const stemHeight = HEIGHT_CHAIR_SEAT - seatThickness - baseHeight;

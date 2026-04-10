@@ -16,6 +16,7 @@ import { SeatOccupant, AvatarType } from '@/types/room';
 import { VoxelModal } from '../ui/VoxelModal';
 import { AvatarSelector } from '../ui/AvatarSelector';
 import { FurnitureBottomBar } from '@/features/room/components/ui/FurnitureBottomBar';
+import { PlacementPreview } from '@/features/room/components/scene/PlacementPreview';
 
 export function WorldCanvas() {
   // Supabase/Presence の同期を開始
@@ -169,6 +170,9 @@ export function WorldCanvas() {
                 voiceState={voiceState} 
               />
             ))}
+
+            {/* 家具配置プレビュー */}
+            <PlacementPreview />
           </group>
 
           {/* 床面への柔らかな影 */}
