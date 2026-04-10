@@ -3,7 +3,7 @@
 import React from 'react';
 import { Workstation, CustomWorkstation, Chair } from '@/components/office/OfficeFurniture';
 import { PottedPlant } from '@/components/office/OfficeEquipment';
-import { RoomItem } from '../../constants/items';
+import { RoomItem } from '@/features/room/constants/items';
 import { useRoomStore } from '@/store/roomStore';
 import { useVoxelGrid } from '@/hooks/useVoxelGrid';
 
