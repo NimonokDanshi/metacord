@@ -136,6 +136,8 @@ export function useRoom() {
       let roomId = channelId || instanceId;
       if (!roomId) roomId = 'local-dev-room';
       
+      if (!supabase) return;
+
       const { data, error } = await supabase
         .from('t_server_furniture')
         .select('*')

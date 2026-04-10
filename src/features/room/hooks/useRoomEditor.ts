@@ -35,7 +35,7 @@ export function useRoomEditor() {
 
     const { data, error } = await supabase
       .from('t_server_furniture')
-      .insert(newFurniture)
+      .insert(newFurniture as any)
       .select()
       .single();
 
@@ -55,6 +55,8 @@ export function useRoomEditor() {
    * 家具を削除します
    */
   const deleteFurniture = async (id: string) => {
+    if (!supabase) return { error: 'Supabase client not initialized' };
+
     const { error } = await supabase
       .from('t_server_furniture')
       .delete()

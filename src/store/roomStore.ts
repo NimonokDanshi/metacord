@@ -70,6 +70,8 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   // 編集モード初期値
   isEditing: false,
   selectedItemId: null,
+  previewPosition: null,
+  previewRotation: 0,
   // 家具データの初期値
   furnitures: [],
 
@@ -105,14 +107,10 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   getOccupiedGrids: () => {
     const occupied = new Set<string>();
     const { furnitures } = get();
-    // ROOM_ITEMS の情報を取り込んでサイズ分すべてのマスを占有させる
-    // (循環参照を避けるため動的インポートまたは外部テーブル参照が望ましいがここでは一旦簡略化)
     furnitures.forEach(f => {
-      // 本来はアイテムマスタからサイズを引くべき
-      // 現状は 1x1 と 2x1 (標準デスク) を簡易的に判定
       const isDesk = f.item_id === 'standard-desk';
       const sizeX = isDesk ? 2 : 1;
-      const sizeZ = 1;
+      const sizeZ = isDesk ? 2 : 1; 
       for (let dx = 0; dx < sizeX; dx++) {
         for (let dz = 0; dz < sizeZ; dz++) {
           occupied.add(`${f.pos_x + dx},${f.pos_z + dz}`);
@@ -126,5 +124,5 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   setEditing: (isEditing) => set({ isEditing, selectedItemId: null, previewPosition: null, previewRotation: 0 }),
   setSelectedItem: (selectedItemId) => set({ selectedItemId, previewRotation: 0 }),
   setPreviewPosition: (previewPosition) => set({ previewPosition }),
-  setPreviewRotation: (previewRotation) => set({ previewRotation }),
+  setPreviewRotation: (rotation) => set({ previewRotation: rotation }),
 }));
