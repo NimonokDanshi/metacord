@@ -28,12 +28,32 @@ interface RoomStore {
 
   /** 現在使用中のseat_indexの集合を返すゲッター */
   getOccupiedSeats: () => Set<number>;
+
+  // --- 編集モード関連 ---
+  /** 編集モード中かどうか */
+  isEditing: boolean;
+  /** 現在選択中の家具アイテムID */
+  selectedItemId: string | null;
+  /** グリッド上のプレビュー位置 [x, z] */
+  previewPosition: [number, number] | null;
+
+  /** 編集モードの切り替え */
+  setEditing: (isEditing: boolean) => void;
+  /** 選択中のアイテムをセット */
+  setSelectedItem: (itemId: string | null) => void;
+  /** プレビュー位置をセット */
+  setPreviewPosition: (pos: [number, number] | null) => void;
 }
 
 export const useRoomStore = create<RoomStore>((set, get) => ({
   occupants: new Map(),
   mySeatIndex: null,
   isConnected: false,
+
+  // 編集モード初期値
+  isEditing: false,
+  selectedItemId: null,
+  previewPosition: null,
 
   setOccupants: (occupants) => set({ occupants }),
 
@@ -59,4 +79,9 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     get().occupants.forEach((o) => seats.add(o.seat_index));
     return seats;
   },
+
+  // 編集モードアクション
+  setEditing: (isEditing) => set({ isEditing, selectedItemId: null, previewPosition: null }),
+  setSelectedItem: (selectedItemId) => set({ selectedItemId }),
+  setPreviewPosition: (previewPosition) => set({ previewPosition }),
 }));
