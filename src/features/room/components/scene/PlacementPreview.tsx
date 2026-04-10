@@ -109,7 +109,7 @@ export function PlacementPreview() {
 
       {/* 配置決定・キャンセルボタン (3D追従) */}
       {canPlace && !isDragging && (
-        <Html position={[0, 2, 0]} center pointerEvents="auto">
+        <Html position={[0, 2, 0]} center pointerEvents="auto" portal={{ current: gl.domElement.parentElement as HTMLElement }}>
           <div className="flex gap-4 pointer-events-auto select-none" onPointerDown={e => e.stopPropagation()}>
             <button 
               onPointerDown={(e) => e.stopPropagation()}
