@@ -31,6 +31,8 @@ export function useRoomEditor() {
       rotation,
     };
 
+    if (!supabase) return { error: 'Supabase client not initialized' };
+
     const { data, error } = await supabase
       .from('t_server_furniture')
       .insert(newFurniture)
