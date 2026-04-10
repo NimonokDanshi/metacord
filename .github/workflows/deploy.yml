@@ -34,6 +34,11 @@ jobs:
 
       - name: Deploy Edge Functions (Prod)
         if: github.ref == 'refs/heads/main'
-        run: supabase functions deploy --project-ref ${{ secrets.SUPABASE_PROJECT_ID_PROD }}
+        run: |
+          if [ -d "supabase/functions" ] && [ "$(ls -A supabase/functions)" ]; then
+            supabase functions deploy --project-ref ${{ secrets.SUPABASE_PROJECT_ID_PROD }}
+          else
+            echo "No functions found. Skipping deployment."
+          fi
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
