@@ -56,11 +56,17 @@ ALTER TABLE public.m_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.t_server_furniture ENABLE ROW LEVEL SECURITY;
 
 -- 読み取りは全員許可
+DROP POLICY IF EXISTS "anon can read servers" ON public.m_servers;
 CREATE POLICY "anon can read servers" ON public.m_servers FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "anon can read users" ON public.m_users;
 CREATE POLICY "anon can read users" ON public.m_users FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "anon can read furniture" ON public.t_server_furniture;
 CREATE POLICY "anon can read furniture" ON public.t_server_furniture FOR SELECT USING (true);
 
 -- m_users への UPSERT 許可 (401エラー解消用)
+DROP POLICY IF EXISTS "Allow anon to upsert users" ON public.m_users;
 CREATE POLICY "Allow anon to upsert users" ON public.m_users
   FOR ALL
   TO anon
