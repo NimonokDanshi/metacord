@@ -1,0 +1,35 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Supabase Deployment ---
+      # main ブランチ（本番）の場合のみ DB マイグレーションと Edge Functions を実行
+      - name: Setup Supabase CLI
+        if: github.ref == 'refs/heads/main'
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy Database Migrations (Prod)
+        if: github.ref == 'refs/heads/main'
+        run: supabase db push --method linked
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID_PROD }}
+
+      - name: Deploy Edge Functions (Prod)
+        if: github.ref == 'refs/heads/main'
+        run: supabase functions deploy --project-id ${{ secrets.SUPABASE_PROJECT_ID_PROD }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

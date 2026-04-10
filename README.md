@@ -40,10 +40,45 @@ npm run dev
 3. 動作確認
 ブラウザで [http://localhost:3000](http://localhost:3000) にアクセスすると、ローカル環境でアプリが動作していることを確認できます。
 
-## デプロイについて
+## デプロイと環境構成
 
-本プロジェクトは Vercel へのデプロイを前提としてアーキテクチャが設計されています。
-このリポジトリの `main` ブランチへコードを `push` することで、Vercel経由で自動デプロイ（オートデプロイ）が走るようになっています。
+本プロジェクトは、開発（Dev）と本番（Prod）の環境が高精度に分離されています。
+
+### 1. 環境構成図
+- **Local**: ローカルPCで動作。開発用 Supabase への直接接続、または Supabase CLI による各操作。
+- **Dev (branch: `dev`)**: 開発環境。Push すると **Vercel (Preview)** に自動デプロイ。
+- **Prod (branch: `main`)**: 本番環境。Push すると **GitHub Actions** が以下の順で処理：
+  1. Supabase のデータベース・マイグレーションを適用
+  2. Supabase の Edge Functions をデプロイ
+  3. Vercel (Production) に自動デプロイ
+
+### 2. Supabase 接続情報の確認方法 (GitHub Secrets 用)
+GitHub Actions の設定に必要な情報は、Supabase ダッシュボードから取得できます。
+
+- **Project ID**: `Project Settings` > `General` > **Reference ID**
+- **DB Password**: プロジェクト作成時に設定したパスワード。
+  - *忘れた場合*: `Database` > `Database Settings` > `Database Password` > **Reset password** からリセット可能。
+- **Access Token**: [Supabase Access Tokens](https://supabase.com/dashboard/account/tokens) から生成。
+
+---
+
+## 開発・運用フロー（マイグレーション）
+
+データベースのスキーマ変更（テーブル追加、カラム変更、RLSポリシーの更新など）を行う際は、以下のフローを推奨します。
+
+1. **マイグレーションファイルの生成**
+   ```bash
+   npx supabase migration new [チケット名や変更内容]
+   ```
+2. **SQLの記述**
+   `supabase/migrations/` 配下に生成されたファイルに、実行したい SQL 操作（CREATE TABLE等）を記述します。
+3. **リポジトリへの反映**
+   ファイルをコミットし、`dev` ブランチで動作確認を行った後、`main` ブランチへマージします。
+4. **本番適用**
+   `main` ブランチへのマージを検知した GitHub Actions が、本番プロジェクトへ安全にマイグレーションを適用します。
+
+> [!TIP]
+> 既存の開発プロジェクトで **401 Unauthorized** が発生している場合は、`document/fix_401_rls.sql` の内容を開発環境の SQL Editor で一度実行してください。
 
 ## 設計ドキュメント
 
