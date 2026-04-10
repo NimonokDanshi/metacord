@@ -15,11 +15,12 @@ import { getDiscordAvatarUrl } from '@/types/discord';
 import { SeatOccupant, AvatarType } from '@/types/room';
 import { VoxelModal } from '../ui/VoxelModal';
 import { AvatarSelector } from '../ui/AvatarSelector';
+import { FurnitureBottomBar } from '@/features/room/components/ui/FurnitureBottomBar';
 
 export function WorldCanvas() {
   // Supabase/Presence の同期を開始
   useRoom();
-  const occupants = useRoomStore((state) => state.occupants);
+  const { occupants, isEditing, setEditing } = useRoomStore();
   const { voiceStates, addLogMessage } = useDiscordStore();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
@@ -95,7 +96,26 @@ export function WorldCanvas() {
           <div className="absolute -top-1 -left-1 w-2 h-2 bg-white/40" />
           <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white/40" />
         </button>
+
+        {/* Edit Room Button */}
+        <button
+          onClick={() => setEditing(!isEditing)}
+          className="group relative cursor-pointer"
+        >
+          <div className={`
+            ${isEditing ? 'bg-[#ff4d6d] border-[#c9184a] shadow-[4px_4px_0_0_#a4133c]' : 'bg-[#7209b7] border-[#560bad] shadow-[4px_4px_0_0_#480ca8]'}
+            border-4 px-6 py-2 group-hover:translate-y-1 group-hover:shadow-none transition-all
+          `}>
+            <span className="text-white font-black text-xl tracking-[0.2em] uppercase drop-shadow-[2px_2px_0_#480ca8]">
+              {isEditing ? 'Exit' : 'Edit'}
+            </span>
+          </div>
+          <div className="absolute -top-1 -left-1 w-2 h-2 bg-white/20" />
+        </button>
       </div>
+
+      {/* Furniture Bottom Bar */}
+      <FurnitureBottomBar />
 
       <VoxelModal 
         isOpen={isModalOpen} 
