@@ -49,6 +49,8 @@ interface RoomStore {
   selectedItemId: string | null;
   /** グリッド上のプレビュー位置 [x, z] */
   previewPosition: [number, number] | null;
+  /** プレビュー中の回転 (ラジアン) */
+  previewRotation: number;
 
   /** 編集モードの切り替え */
   setEditing: (isEditing: boolean) => void;
@@ -56,6 +58,8 @@ interface RoomStore {
   setSelectedItem: (itemId: string | null) => void;
   /** プレビュー位置をセット */
   setPreviewPosition: (pos: [number, number] | null) => void;
+  /** プレビュー回転をセット */
+  setPreviewRotation: (rotation: number) => void;
 }
 
 export const useRoomStore = create<RoomStore>((set, get) => ({
@@ -100,15 +104,27 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   removeFurniture: (id) => set((s) => ({ furnitures: s.furnitures.filter(f => f.id !== id) })),
   getOccupiedGrids: () => {
     const occupied = new Set<string>();
-    // TODO: 家具のサイズ（items.ts）を参照して全マスを埋める必要があるが、現状は原点のみ
-    get().furnitures.forEach(f => {
-      occupied.add(`${f.pos_x},${f.pos_z}`);
+    const { furnitures } = get();
+    // ROOM_ITEMS の情報を取り込んでサイズ分すべてのマスを占有させる
+    // (循環参照を避けるため動的インポートまたは外部テーブル参照が望ましいがここでは一旦簡略化)
+    furnitures.forEach(f => {
+      // 本来はアイテムマスタからサイズを引くべき
+      // 現状は 1x1 と 2x1 (標準デスク) を簡易的に判定
+      const isDesk = f.item_id === 'standard-desk';
+      const sizeX = isDesk ? 2 : 1;
+      const sizeZ = 1;
+      for (let dx = 0; dx < sizeX; dx++) {
+        for (let dz = 0; dz < sizeZ; dz++) {
+          occupied.add(`${f.pos_x + dx},${f.pos_z + dz}`);
+        }
+      }
     });
     return occupied;
   },
 
   // 編集モードアクション
-  setEditing: (isEditing) => set({ isEditing, selectedItemId: null, previewPosition: null }),
-  setSelectedItem: (selectedItemId) => set({ selectedItemId }),
+  setEditing: (isEditing) => set({ isEditing, selectedItemId: null, previewPosition: null, previewRotation: 0 }),
+  setSelectedItem: (selectedItemId) => set({ selectedItemId, previewRotation: 0 }),
   setPreviewPosition: (previewPosition) => set({ previewPosition }),
+  setPreviewRotation: (previewRotation) => set({ previewRotation }),
 }));

@@ -14,10 +14,10 @@ export interface RoomItem {
 export const ROOM_ITEMS: RoomItem[] = [
   {
     id: 'standard-desk',
-    name: '標準デスク',
+    name: 'Standard Desk',
     type: 'desk',
     sizeX: 2,
-    sizeZ: 1,
+    sizeZ: 2,
     isSeat: true,
     modelComponent: 'Workstation',
   },

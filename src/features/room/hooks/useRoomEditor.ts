@@ -15,8 +15,13 @@ export function useRoomEditor() {
    * 家具を保存します
    */
   const saveFurniture = async (item_id: string, x: number, z: number, rotation: number) => {
-    const roomId = getRoomId();
-    if (!roomId) return { error: 'No room ID' };
+    let roomId = getRoomId();
+    
+    // local-dev モード等のためのフォールバック
+    if (!roomId) {
+      roomId = 'local-dev-room';
+      console.warn('[useRoomEditor] Room ID missing, falling back to:', roomId);
+    }
 
     const newFurniture: NewFurniture = {
       server_id: roomId,
@@ -33,7 +38,7 @@ export function useRoomEditor() {
       .single();
 
     if (error) {
-      console.error('Failed to save furniture:', error);
+      console.error('[useRoomEditor] Failed to save furniture:', JSON.stringify(error, null, 2));
       return { error };
     }
 

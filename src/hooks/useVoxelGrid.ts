@@ -78,6 +78,9 @@ export function useVoxelGrid() {
     getPositionFromSeat, 
     getGridFromWorld, 
     getWorldFromGrid,
-    checkCollision 
+    checkCollision,
+    getSeatFromGrid: (gx: number, gz: number) => {
+      return gz * GRID_SIZE_X + gx;
+    }
   };
 }

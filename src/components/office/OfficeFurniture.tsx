@@ -1,5 +1,8 @@
+import { useRoomStore } from '@/store/roomStore';
 import { useVoxelGrid } from '@/hooks/useVoxelGrid';
-import { COLORS, DESK_DEPTH, HEIGHT_DESK, HEIGHT_CHAIR_SEAT, GRID_SIZE_X } from '@/constants/voxel';
+import { ROOM_ITEMS } from '@/features/room/constants/items';
+import { DynamicFurniture } from '@/features/office/components/DynamicFurniture';
+import { COLORS, DESK_DEPTH, HEIGHT_DESK, HEIGHT_CHAIR_SEAT } from '@/constants/voxel';
 import { Monitor, PCCase, Keyboard, Mouse } from './OfficeEquipment';
 
 export function Desk({ pos }: { pos: { x: number; y: number; z: number } }) {
@@ -91,36 +94,63 @@ export function Chair({ pos, rotation = 0 }: { pos: { x: number; y: number; z: n
   );
 }
 
-export function OfficeFurniture() {
-  const { getPositionFromSeat } = useVoxelGrid();
+/**
+ * カスタムデスクモデル (着席時に表示される豪華版)
+ */
+export function CustomWorkstation({ pos, rotation = 0 }: { pos: { x: number; y: number; z: number }, rotation?: number }) {
+  return (
+    <group position={[pos.x, pos.y, pos.z]} rotation={[0, rotation, 0]}>
+      <Desk pos={{ x: 0, y: 0, z: 0 }} />
+      {/* 卓上機材 (2枚のモニター等) */}
+      <group position={[0, HEIGHT_DESK, 0]}>
+        <group position={[-0.4, 0, 0]} rotation={[0, 0.2, 0]}>
+          <Monitor />
+        </group>
+        <group position={[0.4, 0, 0]} rotation={[0, -0.2, 0]}>
+          <Monitor />
+        </group>
+        <group position={[0, 0, 0.25]}>
+          <Keyboard />
+        </group>
+        <group position={[0.35, 0.015, 0.25]}>
+          <Mouse />
+        </group>
+        <group position={[0.7, 0.225, -0.05]}>
+          <PCCase />
+        </group>
+      </group>
+    </group>
+  );
+}
 
-  // デスクアイランド (2x3 = 6席)
-  // 1人あたり2マス分の幅を持たせる
-  const islandConfig = [
-    { xIdx: 3, zIdx: 4, chairRot: 0 },
-    { xIdx: 5, zIdx: 4, chairRot: 0 },
-    { xIdx: 7, zIdx: 4, chairRot: 0 },
-    { xIdx: 3, zIdx: 7, chairRot: Math.PI },
-    { xIdx: 5, zIdx: 7, chairRot: Math.PI },
-    { xIdx: 7, zIdx: 7, chairRot: Math.PI },
-  ];
+/**
+ * サーバーに配置された家具を動的に描画するコンポーネント
+ */
+export function OfficeFurniture() {
+  const { furnitures } = useRoomStore();
+  const { getWorldFromGrid } = useVoxelGrid();
+
+  console.log('[OfficeFurniture] Rendering furnitures:', furnitures);
 
   return (
     <group>
-      {islandConfig.map((conf, i) => {
-        const seatIdx = conf.zIdx * GRID_SIZE_X + conf.xIdx;
-        const pos = getPositionFromSeat(seatIdx, 0);
-        
-        // chairRot: 0 (南向き) ならデスクは南側 (+Z)
-        // chairRot: PI (北向き) ならデスクは北側 (-Z)
-        const workstationZOffset = conf.chairRot === 0 ? 1.0 : -1.0;
-        const workstationPos = { ...pos, z: pos.z + workstationZOffset };
+      {furnitures.map((f) => {
+        const item = ROOM_ITEMS.find((it) => it.id === f.item_id);
+        if (!item) {
+          console.warn(`[OfficeFurniture] Item not found: ${f.item_id}`);
+          return null;
+        }
+
+        const worldPos = getWorldFromGrid(f.pos_x, f.pos_z);
 
         return (
-          <group key={i}>
-            <Chair pos={pos} rotation={conf.chairRot} />
-            {/* デスクが椅子の方を向くように回転を PI ずらす */}
-            <Workstation pos={workstationPos} rotation={conf.chairRot + Math.PI} />
+          <group key={f.id} position={[worldPos.x, worldPos.y, worldPos.z]}>
+            <DynamicFurniture 
+              item={item} 
+              rotation={f.rotation} 
+              gridX={f.pos_x} 
+              gridZ={f.pos_z} 
+            />
           </group>
         );
       })}

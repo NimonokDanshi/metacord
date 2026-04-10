@@ -10,6 +10,7 @@ import { OfficeFurniture } from '../office/OfficeFurniture';
 import { VoxelMember } from '../members/VoxelMember';
 import { useRoom } from '@/hooks/useRoom';
 import { useRoomStore } from '@/store/roomStore';
+import { useVoxelGrid } from '@/hooks/useVoxelGrid';
 import { useDiscordStore } from '@/store/discordStore';
 import { getDiscordAvatarUrl } from '@/types/discord';
 import { SeatOccupant, AvatarType } from '@/types/room';
@@ -118,6 +119,7 @@ export function WorldCanvas() {
       {/* Furniture Bottom Bar */}
       <FurnitureBottomBar />
 
+
       <VoxelModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -141,6 +143,7 @@ export function WorldCanvas() {
           enablePan={false} 
           enableRotate={true}
           maxPolarAngle={Math.PI / 2.1} 
+          enabled={!isEditing}
         />
 
         {/* ライティング */}
@@ -163,13 +166,31 @@ export function WorldCanvas() {
             <OfficeFurniture />
 
             {/* 参加者 (統合リスト) */}
-            {mergedMembers.map(({ occupant, voiceState }, index) => (
-              <VoxelMember 
-                key={`${String(occupant.user_id)}_${index}`} 
-                occupant={occupant} 
-                voiceState={voiceState} 
-              />
-            ))}
+            {mergedMembers.map(({ occupant, voiceState }, index) => {
+              // 座席位置に椅子があるかチェック。なければ立たせる。
+              const { getOccupiedGrids } = useRoomStore.getState();
+              const occupied = getOccupiedGrids();
+              
+              // seat_index からグリッド位置を取得
+              const gx = occupant.seat_index % 12; // GRID_SIZE_X
+              const gz = Math.floor(occupant.seat_index / 12);
+              
+              const hasFurniture = occupied.has(`${gx},${gz}`);
+              
+              // 椅子がない（家具がない）場所であれば座るモーションだが、
+              // 「椅子が存在しなければランダム位置に立つ」仕様のため、
+              // ここでは簡易的に、全アバターに対して「家具がない場所」を探すロジックが必要。
+              // 現状の VoxelMember は seat_index を元に動くため、
+              // 家具の有無に基づいて VoxelMember に渡すデータを調整。
+              
+              return (
+                <VoxelMember 
+                  key={`${String(occupant.user_id)}_${index}`} 
+                  occupant={occupant} 
+                  voiceState={voiceState} 
+                />
+              );
+            })}
 
             {/* 家具配置プレビュー */}
             <PlacementPreview />

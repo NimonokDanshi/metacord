@@ -133,8 +133,8 @@ export function useRoom() {
 
     // 初期家具データのロード
     const fetchFurnitures = async () => {
-      const roomId = channelId || instanceId;
-      if (!roomId) return;
+      let roomId = channelId || instanceId;
+      if (!roomId) roomId = 'local-dev-room';
       
       const { data, error } = await supabase
         .from('t_server_furniture')
@@ -142,7 +142,10 @@ export function useRoom() {
         .eq('server_id', roomId);
         
       if (!error && data) {
+        console.log('[useRoom] Furnitures loaded:', data.length);
         setFurnitures(data);
+      } else {
+        console.error('[useRoom] Failed to load furnitures:', error);
       }
     };
     fetchFurnitures();
