@@ -10,19 +10,51 @@ import { getDiscordAvatarUrl } from '@/types/discord';
 import { GRID_SIZE_X, GRID_SIZE_Z } from '@/constants/voxel';
 import { Furniture } from '@/types/furniture';
 
-const MAX_SEATS = GRID_SIZE_X * GRID_SIZE_Z;
-const ISLAND_SEATS = [51, 53, 55, 87, 89, 91];
+import { ROOM_ITEMS } from '@/constants/roomItems';
 
-function pickEmptySeat(occupiedSeats: Set<number>): number {
-  // まずは島（デスクのある席）から探す
-  for (const seat of ISLAND_SEATS) {
-    if (!occupiedSeats.has(seat)) return seat;
+const MAX_SEATS = GRID_SIZE_X * GRID_SIZE_Z;
+
+interface SeatInfo {
+  seat_index: number;
+  furniture_id?: string;
+}
+
+/**
+ * 空いている座席（家具またはグリッド）を選択します。
+ */
+function pickEmptySeat(
+  occupiedSeats: Set<number>, 
+  occupiedFurnitureIds: Set<string>,
+  furnitures: Furniture[]
+): SeatInfo {
+  // 1. まずは配置されている「座席属性を持つ家具」から空いているものを探す
+  const seatFurnitures = furnitures.filter(f => {
+    const item = ROOM_ITEMS.find(it => it.id === f.item_id);
+    return item?.isSeat && !occupiedFurnitureIds.has(f.id);
+  });
+
+  if (seatFurnitures.length > 0) {
+    // ランダムに選択
+    const target = seatFurnitures[Math.floor(Math.random() * seatFurnitures.length)];
+    // 家具のベースとなるグリッドインデックスを算出 (Fallback用)
+    const seatIdx = target.pos_z * GRID_SIZE_X + target.pos_x;
+    return { seat_index: seatIdx, furniture_id: target.id };
   }
-  // 島がいっぱいなら若い順に探す
+
+  // 2. 家具がない、または満席の場合は、空いているグリッド（「立ち」位置）をランダムに探す
+  const availableGrids: number[] = [];
   for (let i = 0; i < MAX_SEATS; i++) {
-    if (!occupiedSeats.has(i)) return i;
+    if (!occupiedSeats.has(i)) {
+      availableGrids.push(i);
+    }
   }
-  return MAX_SEATS;
+
+  if (availableGrids.length > 0) {
+    const seatIdx = availableGrids[Math.floor(Math.random() * availableGrids.length)];
+    return { seat_index: seatIdx };
+  }
+
+  return { seat_index: 0 }; // 最終フォールバック
 }
 
 export function useRoom() {
@@ -36,6 +68,7 @@ export function useRoom() {
     setFurnitures,
     addFurniture,
     removeFurniture,
+    furnitures, // roomStore から現在配置されている家具を取得
   } = useRoomStore();
   const channelRef = useRef<RealtimeChannel | null>(null);
 
@@ -71,6 +104,7 @@ export function useRoom() {
           display_name: payload.display_name,
           avatar_url: payload.avatar_url,
           seat_index: payload.seat_index,
+          furniture_id: payload.furniture_id,
           avatar_type: payload.avatar_type,
         });
       }
@@ -86,6 +120,7 @@ export function useRoom() {
           display_name: payload.display_name,
           avatar_url: payload.avatar_url,
           seat_index: payload.seat_index,
+          furniture_id: payload.furniture_id,
           avatar_type: payload.avatar_type,
         });
       }
@@ -164,17 +199,25 @@ export function useRoom() {
         console.log('[useRoom] 接続成功！トラックを開始します。');
 
         const currentState = channel.presenceState<PresencePayload>();
-        const occupiedByOthers = new Set<number>();
+        const occupiedSeats = new Set<number>();
+        const occupiedFurnitureIds = new Set<string>();
+
+        // 最新の家具情報を取得 (roomStore の最新状態を使うため getState() を利用)
+        const currentFurnitures = useRoomStore.getState().furnitures;
+
         for (const [userId, presenceList] of Object.entries(currentState)) {
           if (userId === user.id) continue;
           const payload = presenceList[0] as PresencePayload;
           if (typeof payload.seat_index === 'number') {
-            occupiedByOthers.add(payload.seat_index);
+            occupiedSeats.add(payload.seat_index);
+          }
+          if (payload.furniture_id) {
+            occupiedFurnitureIds.add(payload.furniture_id);
           }
         }
 
-        const seatIndex = pickEmptySeat(occupiedByOthers);
-        setMySeatIndex(seatIndex);
+        const seatInfo = pickEmptySeat(occupiedSeats, occupiedFurnitureIds, currentFurnitures);
+        setMySeatIndex(seatInfo.seat_index);
 
         const avatarUrl = getDiscordAvatarUrl(user);
         const displayName = user.global_name ?? (user.discriminator !== '0' ? `${user.username}#${user.discriminator}` : user.username);
@@ -183,7 +226,8 @@ export function useRoom() {
           user_id: user.id,
           display_name: displayName,
           avatar_url: avatarUrl,
-          seat_index: seatIndex,
+          seat_index: seatInfo.seat_index,
+          furniture_id: seatInfo.furniture_id,
           avatar_type: avatarType,
           joined_at: new Date().toISOString(),
         };
@@ -202,3 +246,4 @@ export function useRoom() {
     };
   }, [user, instanceId, channelId, avatarType, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setConnected, setFurnitures, addFurniture, removeFurniture]);
 }
+

@@ -30,6 +30,8 @@ export function Workstation({ pos, rotation = 0 }: { pos: { x: number; y: number
   return (
     <group position={[pos.x, pos.y, pos.z]} rotation={[0, rotation, 0]}>
       <Desk pos={{ x: 0, y: 0, z: 0 }} />
+      {/* セットの椅子 */}
+      <Chair pos={{ x: 0.5, y: 0, z: 1.25 }} rotation={Math.PI} />
       {/* 卓上機材 (センター基準) */}
       <group position={[0, HEIGHT_DESK, 0]}>
         <Monitor />
@@ -101,6 +103,8 @@ export function CustomWorkstation({ pos, rotation = 0 }: { pos: { x: number; y: 
   return (
     <group position={[pos.x, pos.y, pos.z]} rotation={[0, rotation, 0]}>
       <Desk pos={{ x: 0, y: 0, z: 0 }} />
+      {/* セットの椅子 */}
+      <Chair pos={{ x: 0.5, y: 0, z: 1.25 }} rotation={Math.PI} />
       {/* 卓上機材 (2枚のモニター等) */}
       <group position={[0, HEIGHT_DESK, 0]}>
         <group position={[-0.4, 0, 0]} rotation={[0, 0.2, 0]}>
@@ -122,6 +126,7 @@ export function CustomWorkstation({ pos, rotation = 0 }: { pos: { x: number; y: 
     </group>
   );
 }
+
 
 /**
  * サーバーに配置された家具を動的に描画するコンポーネント
@@ -146,6 +151,7 @@ export function OfficeFurniture() {
         return (
           <group key={f.id} position={[worldPos.x, worldPos.y, worldPos.z]}>
             <DynamicFurniture 
+              id={f.id}
               item={item} 
               rotation={f.rotation} 
               gridX={f.pos_x} 

@@ -21,8 +21,10 @@ export interface PresencePayload {
   display_name: string;
   /** Discordアバターのアイコン (URL) */
   avatar_url: string | null;
-  /** 着席しているシート番号 (0 〜 GRID_COLS * GRID_ROWS - 1) */
+  /** 着席しているシート番号 (家具がない場合のフォールバック) */
   seat_index: number;
+  /** 着席している家具のID (オプション) */
+  furniture_id?: string;
   /** アバターの種類 */
   avatar_type: AvatarType;
   /** 入室日時 */
@@ -33,3 +35,4 @@ export interface PresencePayload {
  * アプリ内で管理する着席情報（Presenceから変換済み）
  */
 export type SeatOccupant = Omit<PresencePayload, 'joined_at'>;
+

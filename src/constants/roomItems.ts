@@ -9,6 +9,17 @@ export interface RoomItem {
   isSeat: boolean;
   thumbnailUrl?: string;
   modelComponent: string; // DynamicFurniture で利用するコンポーネント名
+  /** 
+   * 座席の基準点からの相対オフセット 
+   * x, z: グリッド単位のオフセット
+   * rotation: 家具の向きに対する相対回転 (ラジアン)
+   */
+  seatOffset?: {
+    x: number;
+    y: number;
+    z: number;
+    rotation: number;
+  };
 }
 
 export const ROOM_ITEMS: RoomItem[] = [
@@ -20,6 +31,12 @@ export const ROOM_ITEMS: RoomItem[] = [
     sizeZ: 2,
     isSeat: true,
     modelComponent: 'Workstation',
+    seatOffset: {
+      x: 0.5,
+      y: 0,
+      z: 1.25,
+      rotation: Math.PI, // デスクに向き合うように (180度)
+    },
   },
   {
     id: 'standard-chair',
