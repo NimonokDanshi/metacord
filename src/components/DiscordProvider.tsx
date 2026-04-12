@@ -222,7 +222,6 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
               channel_id: discordSdk.channelId 
             });
 
-            pollInterval = setInterval(fetchChannelData, 30000);
           }
         } catch (authError: any) {
           log('Discord認証スキップ（ローカルブラウザ）:', authError.message);

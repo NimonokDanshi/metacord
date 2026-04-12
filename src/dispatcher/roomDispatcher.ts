@@ -165,6 +165,20 @@ export function useRoom() {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 't_server_furniture',
+        },
+        (payload) => {
+          // 家具の位置更新を反映
+          const { furnitures } = useRoomStore.getState();
+          const next = furnitures.map(f => f.id === payload.new.id ? (payload.new as Furniture) : f);
+          setFurnitures(next);
+        }
+      )
       .subscribe();
 
     // 初期家具データのロード
