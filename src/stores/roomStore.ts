@@ -8,6 +8,8 @@ interface RoomStore {
 
   /** 自分自身のseat_index（未着席は null） */
   mySeatIndex: number | null;
+  /** 自分自身が座っている家具のID */
+  myFurnitureId: string | null;
 
   /** Supabase Realtimeチャンネルの接続状態 */
   isConnected: boolean;
@@ -23,9 +25,12 @@ interface RoomStore {
 
   /** 自分のseat_indexをセット */
   setMySeatIndex: (index: number | null) => void;
+  /** 自分が座っている家具のIDをセット */
+  setMyFurnitureId: (id: string | null) => void;
 
   /** 接続状態をセット */
   setConnected: (connected: boolean) => void;
+
 
   /** 現在使用中のseat_indexの集合を返すゲッター */
   getOccupiedSeats: () => Set<number>;
@@ -65,6 +70,7 @@ interface RoomStore {
 export const useRoomStore = create<RoomStore>((set, get) => ({
   occupants: new Map(),
   mySeatIndex: null,
+  myFurnitureId: null,
   isConnected: false,
 
   // 編集モード初期値
@@ -92,6 +98,7 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     }),
 
   setMySeatIndex: (index) => set({ mySeatIndex: index }),
+  setMyFurnitureId: (id) => set({ myFurnitureId: id }),
   setConnected: (connected) => set({ isConnected: connected }),
 
   getOccupiedSeats: () => {

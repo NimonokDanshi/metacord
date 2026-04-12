@@ -44,8 +44,14 @@ export const ROOM_ITEMS: RoomItem[] = [
     type: 'chair',
     sizeX: 1,
     sizeZ: 1,
-    isSeat: false,
+    isSeat: true,
     modelComponent: 'Chair',
+    seatOffset: {
+      x: 0,
+      y: 0,
+      z: 0,
+      rotation: 0,
+    },
   },
   {
     id: 'potted-plant',

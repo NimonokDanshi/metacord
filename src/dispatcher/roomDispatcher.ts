@@ -64,14 +64,17 @@ export function useRoom() {
     upsertOccupant,
     removeOccupant,
     setMySeatIndex,
+    setMyFurnitureId, // 追加
     setConnected,
     setFurnitures,
     addFurniture,
     removeFurniture,
-    furnitures, // roomStore から現在配置されている家具を取得
+    mySeatIndex, // 追加
+    myFurnitureId, // 追加
   } = useRoomStore();
   const channelRef = useRef<RealtimeChannel | null>(null);
 
+  // 1. メインの接続・同期ロジック (avatarType は依存関係に含めない)
   useEffect(() => {
     if (!supabase) {
       console.warn(
@@ -84,7 +87,7 @@ export function useRoom() {
     // Discordユーザー情報とチャンネルID（またはインスタンスID）が取得できるまで待機
     if (!user || (!channelId && !instanceId)) return;
 
-    // ボイスチャンネルIDを優先して使用。これにより「参加」経由でなくても同じチャンネルにいれば同期される。
+    // ボイスチャンネルIDを優先して使用
     const roomKey = channelId ? `room:${channelId}` : `room:${instanceId}`;
     console.log(`[useRoom] ルームへの接続を試みます: ${roomKey} (User: ${user.id})`);
 
@@ -95,7 +98,7 @@ export function useRoom() {
 
     channel.on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState<PresencePayload>();
-      console.log('[useRoom] Presence Sync 発生:', state);
+      console.log('[useRoom] Presence Sync:', state);
       const next = new Map<string, SeatOccupant>();
       for (const [userId, presenceList] of Object.entries(state)) {
         const payload = presenceList[0] as PresencePayload;
@@ -146,7 +149,6 @@ export function useRoom() {
           filter: `server_id=eq.${channelId || instanceId}`,
         },
         (payload) => {
-          console.log('[useRoom] Furniture Inserted:', payload.new);
           addFurniture(payload.new as Furniture);
         }
       )
@@ -158,7 +160,6 @@ export function useRoom() {
           table: 't_server_furniture',
         },
         (payload) => {
-          console.log('[useRoom] Furniture Deleted:', payload.old);
           if (payload.old.id) {
             removeFurniture(payload.old.id);
           }
@@ -170,7 +171,6 @@ export function useRoom() {
     const fetchFurnitures = async () => {
       let roomId = channelId || instanceId;
       if (!roomId) roomId = 'local-dev-room';
-      
       if (!supabase) return;
 
       const { data, error } = await supabase
@@ -179,71 +179,78 @@ export function useRoom() {
         .eq('server_id', roomId);
         
       if (!error && data) {
-        console.log('[useRoom] Furnitures loaded:', data.length);
         setFurnitures(data);
-      } else {
-        console.error('[useRoom] Failed to load furnitures:', error);
       }
     };
     fetchFurnitures();
 
     channel.subscribe(async (status) => {
-      console.log(`[useRoom] サブスクリプションステータス: ${status}`);
-      
-      if (status === 'CHANNEL_ERROR') {
-        console.error('[useRoom] チャンネルエラー。URLマッピングの設定やネットワーク制限を確認してください。');
-      }
-
+      console.log(`[useRoom] ルームステータス: ${status}`);
       if (status === 'SUBSCRIBED') {
-        setConnected(true);
-        console.log('[useRoom] 接続成功！トラックを開始します。');
-
         const currentState = channel.presenceState<PresencePayload>();
         const occupiedSeats = new Set<number>();
         const occupiedFurnitureIds = new Set<string>();
-
-        // 最新の家具情報を取得 (roomStore の最新状態を使うため getState() を利用)
         const currentFurnitures = useRoomStore.getState().furnitures;
 
         for (const [userId, presenceList] of Object.entries(currentState)) {
           if (userId === user.id) continue;
           const payload = presenceList[0] as PresencePayload;
-          if (typeof payload.seat_index === 'number') {
-            occupiedSeats.add(payload.seat_index);
-          }
-          if (payload.furniture_id) {
-            occupiedFurnitureIds.add(payload.furniture_id);
-          }
+          if (typeof payload.seat_index === 'number') occupiedSeats.add(payload.seat_index);
+          if (payload.furniture_id) occupiedFurnitureIds.add(payload.furniture_id);
         }
 
         const seatInfo = pickEmptySeat(occupiedSeats, occupiedFurnitureIds, currentFurnitures);
         setMySeatIndex(seatInfo.seat_index);
-
-        const avatarUrl = getDiscordAvatarUrl(user);
-        const displayName = user.global_name ?? (user.discriminator !== '0' ? `${user.username}#${user.discriminator}` : user.username);
-
-        const presencePayload: PresencePayload = {
-          user_id: user.id,
-          display_name: displayName,
-          avatar_url: avatarUrl,
-          seat_index: seatInfo.seat_index,
-          furniture_id: seatInfo.furniture_id,
-          avatar_type: avatarType,
-          joined_at: new Date().toISOString(),
-        };
+        setMyFurnitureId(seatInfo.furniture_id || null);
         
-        const trackResult = await channel.track(presencePayload);
-        console.log('[useRoom] トラック結果:', trackResult);
+        // 接続成功を通知 (第2の useEffect での track をトリガーする)
+        setConnected(true);
       }
     });
 
     return () => {
       setConnected(false);
       setMySeatIndex(null);
+      setMyFurnitureId(null);
       channel.unsubscribe();
       furnitureChannel.unsubscribe();
       channelRef.current = null;
     };
-  }, [user, instanceId, channelId, avatarType, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setConnected, setFurnitures, addFurniture, removeFurniture]);
+  }, [user, instanceId, channelId, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setMyFurnitureId, setConnected, setFurnitures, addFurniture, removeFurniture]);
+
+  // 2. Presence 同期情報の更新 (接続済み && 座席確定後に実行)
+  useEffect(() => {
+    const channel = channelRef.current;
+    // 接続状態と座席が確定していない場合は track しない
+    const isReady = useRoomStore.getState().isConnected && mySeatIndex !== null;
+    if (!channel || !user || !isReady) return;
+
+    const updatePresence = async () => {
+      const avatarUrl = getDiscordAvatarUrl(user);
+      const displayName = user.global_name ?? (user.discriminator !== '0' ? `${user.username}#${user.discriminator}` : user.username);
+
+      const presencePayload: PresencePayload = {
+        user_id: user.id,
+        display_name: displayName,
+        avatar_url: avatarUrl,
+        seat_index: mySeatIndex!,
+        furniture_id: myFurnitureId || undefined,
+        avatar_type: avatarType,
+        joined_at: new Date().toISOString(),
+      };
+
+      console.log('[useRoom] Presence を送信/更新します:', { seat: mySeatIndex, avatar: avatarType });
+      const result = await channel.track(presencePayload).catch(e => {
+        console.error('[useRoom] Presence track error:', e);
+        return 'error';
+      });
+      
+      if (result !== 'ok') {
+        console.error('[useRoom] Presence 更新失敗:', result);
+      }
+    };
+
+    updatePresence();
+  }, [avatarType, user, mySeatIndex, myFurnitureId]);
 }
 

@@ -4,13 +4,14 @@ import React, { Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrthographicCamera, ContactShadows, OrbitControls } from '@react-three/drei';
-import { COLORS } from '@/constants/voxel';
+import { COLORS, GRID_SIZE_X, GRID_SIZE_Z } from '@/constants/voxel';
 import { VoxelRoom } from '../office/VoxelRoom';
 import { OfficeFurniture } from '../office/OfficeFurniture';
 import { VoxelMember } from '../members/VoxelMember';
 import { useRoom } from '@/dispatcher/roomDispatcher';
 import { useRoomStore } from '@/stores/roomStore';
 import { useVoxelGrid } from '@/utils/voxelGrid';
+import { ROOM_ITEMS } from '@/constants/roomItems';
 import { useDiscordStore } from '@/stores/discordStore';
 import { getDiscordAvatarUrl } from '@/types/discord';
 import { SeatOccupant, AvatarType } from '@/types/room';
@@ -22,7 +23,7 @@ import { PlacementPreview } from '@/components/scene/PlacementPreview';
 export function WorldCanvas() {
   // Supabase/Presence の同期を開始
   useRoom();
-  const { occupants, isEditing, setEditing } = useRoomStore();
+  const { occupants, isEditing, setEditing, furnitures } = useRoomStore();
   const { voiceStates, addLogMessage } = useDiscordStore();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
@@ -30,55 +31,69 @@ export function WorldCanvas() {
   const mergedMembers = React.useMemo(() => {
     const list: Array<{ occupant: SeatOccupant; voiceState?: any }> = [];
     const processedUserIds = new Set<string>();
-    // 固定の6座席インデックス
-    const ISLAND_SEATS = [51, 53, 55, 87, 89, 91];
-    const occupiedSeatsInList = new Set<number>();
+    
+    // 現在 Presence で占有されている座席と家具を把握
+    const occupiedSeats = new Set<number>();
+    const occupiedFurnitureIds = new Set<string>();
 
-    // 1. まずは Presence (アクティビティ起動中) のユーザーを反映
+    // 1. まずは Presence (アクティビティ起動中) のユーザーをそのまま反映
     occupants.forEach((occ) => {
       const vs = voiceStates.find((s) => String(s.user.id) === String(occ.user_id));
+      list.push({ occupant: occ, voiceState: vs });
       
-      // 座席が島の中にあり、かつ重複していないか確認
-      let finalSeat = occ.seat_index;
-      if (!ISLAND_SEATS.includes(finalSeat) || occupiedSeatsInList.has(finalSeat)) {
-        // 島の中の空いている席を探す
-        const fallback = ISLAND_SEATS.find(s => !occupiedSeatsInList.has(s));
-        if (fallback !== undefined) finalSeat = fallback;
-      }
-
-      list.push({ 
-        occupant: { ...occ, seat_index: finalSeat }, 
-        voiceState: vs 
-      });
       processedUserIds.add(String(occ.user_id));
-      occupiedSeatsInList.add(finalSeat);
+      occupiedSeats.add(occ.seat_index);
+      if (occ.furniture_id) occupiedFurnitureIds.add(occ.furniture_id);
     });
 
-    // 2. 残りの空き席を特定
-    const remainingSeats = ISLAND_SEATS.filter(s => !occupiedSeatsInList.has(s));
+    // 2. 空いている「椅子属性を持つ家具」をリストアップ
+    const availableSeatFurnitures = furnitures.filter(f => {
+      const item = ROOM_ITEMS.find(it => it.id === f.item_id);
+      return item?.isSeat && !occupiedFurnitureIds.has(f.id);
+    });
 
-    // 3. ボイスチャンネルにのみいるユーザーを追加
+    // 3. ボイスチャンネルにのみいるユーザーを追加 (空いている家具があれば優先的に座らせる)
     const voiceOnlyUsers = voiceStates
       .filter((vs) => !processedUserIds.has(String(vs.user.id)))
       .sort((a, b) => String(a.user.id).localeCompare(String(b.user.id)));
 
-    voiceOnlyUsers.forEach((vs, index) => {
-      if (index < remainingSeats.length) {
-        const finalSeat = remainingSeats[index];
-        const syntheticOccupant: SeatOccupant = {
-          user_id: String(vs.user.id),
-          display_name: vs.user.global_name || vs.user.username,
-          avatar_url: getDiscordAvatarUrl(vs.user),
-          seat_index: finalSeat,
-          avatar_type: ((vs.user as any).mock_avatar_type as AvatarType) || 'default',
-        };
-        list.push({ occupant: syntheticOccupant, voiceState: vs });
-        occupiedSeatsInList.add(finalSeat);
+    let furnitureIdx = 0;
+    const MAX_SEATS = GRID_SIZE_X * GRID_SIZE_Z;
+
+    voiceOnlyUsers.forEach((vs) => {
+      let finalSeat = 0;
+      let finalFurnitureId: string | undefined = undefined;
+
+      if (furnitureIdx < availableSeatFurnitures.length) {
+        // 空いている椅子に座らせる
+        const f = availableSeatFurnitures[furnitureIdx++];
+        finalSeat = f.pos_z * GRID_SIZE_X + f.pos_x;
+        finalFurnitureId = f.id;
+      } else {
+        // 椅子が足りない場合は、空いているグリッドを探す (z=0付近から優先)
+        for (let i = 0; i < MAX_SEATS; i++) {
+          if (!occupiedSeats.has(i)) {
+            finalSeat = i;
+            occupiedSeats.add(i);
+            break;
+          }
+        }
       }
+
+      const syntheticOccupant: SeatOccupant = {
+        user_id: String(vs.user.id),
+        display_name: vs.user.global_name || vs.user.username,
+        avatar_url: getDiscordAvatarUrl(vs.user),
+        seat_index: finalSeat,
+        furniture_id: finalFurnitureId,
+        avatar_type: ((vs.user as any).mock_avatar_type as AvatarType) || 'default',
+      };
+      
+      list.push({ occupant: syntheticOccupant, voiceState: vs });
     });
     
     return list;
-  }, [occupants, voiceStates]);
+  }, [occupants, voiceStates, furnitures]);
 
   return (
     <div className="relative w-full h-full bg-[#1a1a2e]">
