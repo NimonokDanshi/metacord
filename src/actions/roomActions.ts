@@ -58,5 +58,32 @@ export const roomActions = {
       removeFurniture(id);
     }
     return { success: !error, error };
+  },
+
+  /**
+   * 家具を更新します (再配置用)
+   */
+  updateFurniture: async (id: string, x: number, z: number, rotation: number) => {
+    const { furnitures, setFurnitures } = useRoomStore.getState();
+    if (!supabase) return { error: 'Supabase client not initialized' };
+
+    const { data, error } = await supabase
+      .from('t_server_furniture')
+      .update({
+        pos_x: x,
+        pos_z: z,
+        rotation,
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (!error && data) {
+      // ストアを更新
+      const next = furnitures.map(f => f.id === id ? (data as Furniture) : f);
+      setFurnitures(next);
+    }
+
+    return { data, error };
   }
 };

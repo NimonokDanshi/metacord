@@ -26,7 +26,8 @@ export function DynamicFurniture({
   gridX,
   gridZ
 }: DynamicFurnitureProps) {
-  const { occupants } = useRoomStore();
+  const { occupants, setEditing, setSelectedItem, setMovingFurnitureId, setPreviewRotation } = useRoomStore();
+  const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
 
   // 透明度の適用
   const isPreview = opacity < 1;
@@ -37,8 +38,34 @@ export function DynamicFurniture({
     occupantAtSeat = Array.from(occupants.values()).find(occ => occ.furniture_id === id);
   }
 
+  const handlePointerDown = (e: any) => {
+    if (isPreview || !id) return;
+    e.stopPropagation();
+    
+    // 0.5秒長押しで編集モード
+    longPressTimer.current = setTimeout(() => {
+      console.log('[DynamicFurniture] Long press detected:', id);
+      setEditing(true);
+      setSelectedItem(item.id);
+      setMovingFurnitureId(id);
+      setPreviewRotation(rotation);
+    }, 500);
+  };
+
+  const handlePointerUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
   return (
-    <group rotation={[0, rotation, 0]}>
+    <group 
+      rotation={[0, rotation, 0]} 
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
+    >
       {item.modelComponent === 'Workstation' && (
         <group>
            {/* 着席者がいればカスタムデスクを表示 */}

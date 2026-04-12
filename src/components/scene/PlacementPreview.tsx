@@ -11,7 +11,18 @@ import { roomActions } from '@/actions/roomActions';
 import { Html } from '@react-three/drei';
 
 export function PlacementPreview() {
-  const { isEditing, selectedItemId, previewPosition, previewRotation, setPreviewPosition, setPreviewRotation, setSelectedItem, getOccupiedGrids } = useRoomStore();
+  const { 
+    isEditing, 
+    selectedItemId, 
+    previewPosition, 
+    previewRotation, 
+    movingFurnitureId,
+    setPreviewPosition, 
+    setPreviewRotation, 
+    setSelectedItem, 
+    setMovingFurnitureId,
+    getOccupiedGrids 
+  } = useRoomStore();
   const { getGridFromWorld, getWorldFromGrid, checkCollision } = useVoxelGrid();
   // roomActions を直接利用するため、ここではフックの呼び出しを削除
   const { raycaster, mouse, camera } = useThree();
@@ -122,18 +133,31 @@ export function PlacementPreview() {
                    return;
                 }
                 
-                const { data, error } = await roomActions.saveFurniture(
-                  selectedItem.id, 
-                  previewPosition[0], 
-                  previewPosition[1], 
-                  previewRotation
-                );
-                
-                if (error) {
-                   console.error('[PlacementPreview] Save failed:', error);
+                let result;
+                if (movingFurnitureId) {
+                  // 既存家具の更新
+                  result = await roomActions.updateFurniture(
+                    movingFurnitureId,
+                    previewPosition[0],
+                    previewPosition[1],
+                    previewRotation
+                  );
                 } else {
-                   console.log('[PlacementPreview] Save success:', data);
+                  // 新規保存
+                  result = await roomActions.saveFurniture(
+                    selectedItem.id, 
+                    previewPosition[0], 
+                    previewPosition[1], 
+                    previewRotation
+                  );
+                }
+                
+                if (result.error) {
+                   console.error('[PlacementPreview] Action failed:', result.error);
+                } else {
+                   console.log('[PlacementPreview] Success:', result.data);
                    setSelectedItem(null);
+                   setMovingFurnitureId(null);
                 }
               }}
               className="w-14 h-14 bg-[#4cc9f0] border-4 border-white shadow-[0_4px_10px_rgba(76,201,240,0.5)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer"
@@ -147,6 +171,7 @@ export function PlacementPreview() {
                 e.stopPropagation();
                 console.log('[PlacementPreview] × Clicked');
                 setSelectedItem(null);
+                setMovingFurnitureId(null);
               }}
               className="w-14 h-14 bg-[#ff4d6d] border-4 border-white shadow-[0_4px_10px_rgba(255,77,109,0.5)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer"
             >

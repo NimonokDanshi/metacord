@@ -139,8 +139,10 @@ export function OfficeFurniture() {
 
   return (
     <group>
-      {furnitures.map((f) => {
-        const item = ROOM_ITEMS.find((it) => it.id === f.item_id);
+      {furnitures
+        .filter(f => f.id !== useRoomStore.getState().movingFurnitureId)
+        .map((f) => {
+          const item = ROOM_ITEMS.find((it) => it.id === f.item_id);
         if (!item) {
           console.warn(`[OfficeFurniture] Item not found: ${f.item_id}`);
           return null;

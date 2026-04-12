@@ -56,6 +56,8 @@ interface RoomStore {
   previewPosition: [number, number] | null;
   /** プレビュー中の回転 (ラジアン) */
   previewRotation: number;
+  /** 現在移動中の既存家具のID */
+  movingFurnitureId: string | null;
 
   /** 編集モードの切り替え */
   setEditing: (isEditing: boolean) => void;
@@ -65,6 +67,8 @@ interface RoomStore {
   setPreviewPosition: (pos: [number, number] | null) => void;
   /** プレビュー回転をセット */
   setPreviewRotation: (rotation: number) => void;
+  /** 移動中の家具IDをセット */
+  setMovingFurnitureId: (id: string | null) => void;
 }
 
 export const useRoomStore = create<RoomStore>((set, get) => ({
@@ -78,6 +82,7 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   selectedItemId: null,
   previewPosition: null,
   previewRotation: 0,
+  movingFurnitureId: null,
   // 家具データの初期値
   furnitures: [],
 
@@ -113,8 +118,9 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   removeFurniture: (id) => set((s) => ({ furnitures: s.furnitures.filter(f => f.id !== id) })),
   getOccupiedGrids: () => {
     const occupied = new Set<string>();
-    const { furnitures } = get();
+    const { furnitures, movingFurnitureId } = get();
     furnitures.forEach(f => {
+      if (f.id === movingFurnitureId) return; // 移動中の家具は計算から除外
       const isDesk = f.item_id === 'standard-desk';
       const sizeX = isDesk ? 2 : 1;
       const sizeZ = isDesk ? 2 : 1; 
@@ -128,8 +134,9 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   },
 
   // 編集モードアクション
-  setEditing: (isEditing) => set({ isEditing, selectedItemId: null, previewPosition: null, previewRotation: 0 }),
-  setSelectedItem: (selectedItemId) => set({ selectedItemId, previewRotation: 0 }),
+  setEditing: (isEditing) => set({ isEditing, selectedItemId: null, previewPosition: null, previewRotation: 0, movingFurnitureId: null }),
+  setSelectedItem: (selectedItemId) => set({ selectedItemId, previewRotation: 0, movingFurnitureId: selectedItemId === null ? null : get().movingFurnitureId }),
   setPreviewPosition: (previewPosition) => set({ previewPosition }),
   setPreviewRotation: (rotation) => set({ previewRotation: rotation }),
+  setMovingFurnitureId: (movingFurnitureId) => set({ movingFurnitureId }),
 }));
