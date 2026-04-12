@@ -199,9 +199,11 @@ export function useRoom() {
     fetchFurnitures();
 
     channel.subscribe(async (status) => {
-      console.log(`[useRoom] ルームステータス (Presence): ${status}`);
+      const msg = `[useRoom] Presence status: ${status}`;
+      console.log(msg);
+      useDiscordStore.getState().addLogMessage(msg);
+
       if (status === 'SUBSCRIBED') {
-        console.log('[useRoom] Presence サブスクリプション成功');
         const currentState = channel.presenceState<PresencePayload>();
         const occupiedSeats = new Set<number>();
         const occupiedFurnitureIds = new Set<string>();
@@ -221,14 +223,16 @@ export function useRoom() {
         // 接続成功を通知 (第2の useEffect での track をトリガーする)
         setConnected(true);
       } else if (status === 'CHANNEL_ERROR') {
-        console.error('[useRoom] Presence チャンネルエラーが発生しました');
+        console.error('[useRoom] Presence channel error');
       } else if (status === 'CLOSED') {
-        console.warn('[useRoom] Presence チャンネルが閉じられました');
+        console.warn('[useRoom] Presence channel closed');
       }
     });
 
     return () => {
-      console.log('[useRoom] クリーンアップ: 接続を解除します');
+      const msg = '[useRoom] Cleaning up connection';
+      console.log(msg);
+      useDiscordStore.getState().addLogMessage(msg);
       setConnected(false);
       setMySeatIndex(null);
       setMyFurnitureId(null);

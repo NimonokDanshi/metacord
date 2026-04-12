@@ -36,9 +36,13 @@ export const roomActions = {
       .single();
 
     if (error) {
-      console.error('[roomActions] saveFurniture error:', error.message, error.details);
+      const msg = `[roomActions] saveFurniture error: ${error.message} (${error.details})`;
+      console.error(msg);
+      useDiscordStore.getState().addLogMessage(msg);
     } else if (data) {
-      console.log('[roomActions] saveFurniture success:', data.id);
+      const msg = `[roomActions] saveFurniture success: ${data.id}`;
+      console.log(msg);
+      useDiscordStore.getState().addLogMessage(msg);
       addFurniture(data);
     }
     
@@ -58,9 +62,13 @@ export const roomActions = {
       .eq('id', id);
 
     if (error) {
-      console.error('[roomActions] deleteFurniture error:', error.message);
+      const msg = `[roomActions] deleteFurniture error: ${error.message}`;
+      console.error(msg);
+      useDiscordStore.getState().addLogMessage(msg);
     } else {
-      console.log('[roomActions] deleteFurniture success:', id);
+      const msg = `[roomActions] deleteFurniture success: ${id}`;
+      console.log(msg);
+      useDiscordStore.getState().addLogMessage(msg);
       removeFurniture(id);
     }
     return { success: !error, error };
@@ -85,9 +93,13 @@ export const roomActions = {
       .single();
 
     if (error) {
-      console.error('[roomActions] updateFurniture error:', error.message, error.details);
+      const msg = `[roomActions] updateFurniture error: ${error.message} (${error.details})`;
+      console.error(msg);
+      useDiscordStore.getState().addLogMessage(msg);
     } else if (data) {
-      console.log('[roomActions] updateFurniture success:', data.id);
+      const msg = `[roomActions] updateFurniture success: ${data.id}`;
+      console.log(msg);
+      useDiscordStore.getState().addLogMessage(msg);
       // ストアを更新
       const next = furnitures.map(f => f.id === id ? (data as Furniture) : f);
       setFurnitures(next);
