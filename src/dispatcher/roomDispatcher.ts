@@ -137,107 +137,146 @@ export function useRoom() {
       }
     });
 
-    // --- 家具データの同期設定 ---
-    const furnitureChannel = supabase
-      .channel(`${roomKey}:furniture`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 't_server_furniture',
-          filter: `server_id=eq.${channelId || instanceId}`,
-        },
-        (payload) => {
-          addFurniture(payload.new as Furniture);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 't_server_furniture',
-        },
-        (payload) => {
-          if (payload.old.id) {
-            removeFurniture(payload.old.id);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 't_server_furniture',
-        },
-        (payload) => {
-          // 家具の位置更新を反映
-          const { furnitures } = useRoomStore.getState();
-          const next = furnitures.map(f => f.id === payload.new.id ? (payload.new as Furniture) : f);
-          setFurnitures(next);
-        }
-      )
-      .subscribe();
+    // --- サーバー情報の自動登録 (m_servers) ---
+    const roomId = channelId || instanceId || 'local-dev-room';
+    const initServer = async () => {
+      if (!supabase) return;
+      
+      const msg = `[useRoom] Registering server: ${roomId}`;
+      console.log(msg);
+      useDiscordStore.getState().addLogMessage(msg);
 
-    // 初期家具データのロード
-    const fetchFurnitures = async () => {
-      let roomId = channelId || instanceId;
-      if (!roomId) roomId = 'local-dev-room';
+      try {
+        const { error } = await (supabase.from('m_servers') as any).upsert({
+          server_id: roomId,
+          name: channelId ? 'Discord Channel' : 'Local Dev Room',
+          layout_id: 'default',
+          last_activity_at: new Date().toISOString(),
+        }, { onConflict: 'server_id' });
+
+        if (error) {
+          const errBox = `[useRoom] Server registration failed: ${error.message}`;
+          console.error(errBox);
+          useDiscordStore.getState().addLogMessage(errBox);
+          return;
+        }
+        
+        const okMsg = `[useRoom] Server ready: ${roomId}`;
+        console.log(okMsg);
+        useDiscordStore.getState().addLogMessage(okMsg);
+
+        // サーバー登録成功後に家具と Presence の同期を開始
+        fetchAndSubscribe();
+      } catch (e: any) {
+        console.error('[useRoom] initServer error', e);
+      }
+    };
+
+    // 家具データの同期 & チャンネルの購読を開始する関数
+    const fetchAndSubscribe = async () => {
       if (!supabase) return;
 
+      // 1. 初期家具データのロード
       const { data, error } = await supabase
         .from('t_server_furniture')
         .select('*')
         .eq('server_id', roomId);
-        
+          
       if (!error && data) {
         setFurnitures(data);
       }
-    };
-    fetchFurnitures();
 
-    channel.subscribe(async (status) => {
-      const msg = `[useRoom] Presence status: ${status}`;
-      console.log(msg);
-      useDiscordStore.getState().addLogMessage(msg);
+      // 2. 家具データの同期監視
+      const furnitureChannel = supabase
+        .channel(`${roomKey}:furniture`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 't_server_furniture',
+            filter: `server_id=eq.${roomId}`,
+          },
+          (payload) => {
+            console.log('[useRoom] Furniture INSERT detected');
+            addFurniture(payload.new as Furniture);
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 't_server_furniture',
+          },
+          (payload) => {
+            console.log('[useRoom] Furniture DELETE detected');
+            if (payload.old.id) {
+              removeFurniture(payload.old.id);
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 't_server_furniture',
+          },
+          (payload) => {
+            console.log('[useRoom] Furniture UPDATE detected');
+            const { furnitures } = useRoomStore.getState();
+            const next = furnitures.map(f => f.id === payload.new.id ? (payload.new as Furniture) : f);
+            setFurnitures(next);
+          }
+        )
+        .subscribe((status) => {
+          console.log(`[useRoom] Furniture channel status: ${status}`);
+        });
 
-      if (status === 'SUBSCRIBED') {
-        const currentState = channel.presenceState<PresencePayload>();
-        const occupiedSeats = new Set<number>();
-        const occupiedFurnitureIds = new Set<string>();
-        const currentFurnitures = useRoomStore.getState().furnitures;
+      // 3. Presence の開始
+      channel.subscribe(async (status) => {
+        const pmsg = `[useRoom] Presence status: ${status}`;
+        console.log(pmsg);
+        useDiscordStore.getState().addLogMessage(pmsg);
 
-        for (const [userId, presenceList] of Object.entries(currentState)) {
-          if (userId === user.id) continue;
-          const payload = presenceList[0] as PresencePayload;
-          if (typeof payload.seat_index === 'number') occupiedSeats.add(payload.seat_index);
-          if (payload.furniture_id) occupiedFurnitureIds.add(payload.furniture_id);
+        if (status === 'SUBSCRIBED') {
+          const currentState = channel.presenceState<PresencePayload>();
+          const occupiedSeats = new Set<number>();
+          const occupiedFurnitureIds = new Set<string>();
+          const currentFurnitures = useRoomStore.getState().furnitures;
+
+          for (const [userId, presenceList] of Object.entries(currentState)) {
+            if (userId === user.id) continue;
+            const payload = presenceList[0] as PresencePayload;
+            if (typeof payload.seat_index === 'number') occupiedSeats.add(payload.seat_index);
+            if (payload.furniture_id) occupiedFurnitureIds.add(payload.furniture_id);
+          }
+
+          const seatInfo = pickEmptySeat(occupiedSeats, occupiedFurnitureIds, currentFurnitures);
+          setMySeatIndex(seatInfo.seat_index);
+          setMyFurnitureId(seatInfo.furniture_id || null);
+          setConnected(true);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[useRoom] Presence channel error (CHANNEL_ERROR)');
         }
+      });
 
-        const seatInfo = pickEmptySeat(occupiedSeats, occupiedFurnitureIds, currentFurnitures);
-        setMySeatIndex(seatInfo.seat_index);
-        setMyFurnitureId(seatInfo.furniture_id || null);
-        
-        // 接続成功を通知 (第2の useEffect での track をトリガーする)
-        setConnected(true);
-      } else if (status === 'CHANNEL_ERROR') {
-        console.error('[useRoom] Presence channel error');
-      } else if (status === 'CLOSED') {
-        console.warn('[useRoom] Presence channel closed');
-      }
-    });
+      // クリーンアップ用の参照を保持
+      (channel as any)._furnitureChannel = furnitureChannel;
+    };
+
+    initServer();
 
     return () => {
-      const msg = '[useRoom] Cleaning up connection';
-      console.log(msg);
-      useDiscordStore.getState().addLogMessage(msg);
+      console.log('[useRoom] Cleaning up connection');
       setConnected(false);
       setMySeatIndex(null);
       setMyFurnitureId(null);
       channel.unsubscribe();
-      furnitureChannel.unsubscribe();
+      if ((channel as any)._furnitureChannel) {
+        (channel as any)._furnitureChannel.unsubscribe();
+      }
       channelRef.current = null;
     };
   }, [user, instanceId, channelId, setOccupants, upsertOccupant, removeOccupant, setMySeatIndex, setMyFurnitureId, setConnected, setFurnitures, addFurniture, removeFurniture]);
