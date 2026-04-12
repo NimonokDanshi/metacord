@@ -35,6 +35,48 @@ export function PlacementPreview() {
   // マウスダウン・アップのイベントハンドラ
   const { gl } = useThree();
 
+  const handleConfirm = async () => {
+    if (!selectedItem || !previewPosition) {
+      console.error('[PlacementPreview] No item or position!');
+      return;
+    }
+
+    let result;
+    if (movingFurnitureId) {
+      // 既存家具の更新
+      console.log('[PlacementPreview] Calling updateFurniture:', movingFurnitureId);
+      result = await roomActions.updateFurniture(
+        movingFurnitureId,
+        previewPosition[0],
+        previewPosition[1],
+        previewRotation
+      );
+    } else {
+      // 新規保存
+      console.log('[PlacementPreview] Calling saveFurniture:', selectedItem.id);
+      result = await roomActions.saveFurniture(
+        selectedItem.id,
+        previewPosition[0],
+        previewPosition[1],
+        previewRotation
+      );
+    }
+
+    if (result.error) {
+      console.error('[PlacementPreview] Action failed:', result.error);
+    } else {
+      console.log('[PlacementPreview] Action success:', result.data);
+      setSelectedItem(null);
+      setMovingFurnitureId(null);
+    }
+  };
+
+  const handleCancel = () => {
+    console.log('[PlacementPreview] Cancelled');
+    setSelectedItem(null);
+    setMovingFurnitureId(null);
+  };
+
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
       // ターゲットが Canvas 本体である場合のみドラッグを開始 (ボタン等のクリックを無視)
@@ -123,55 +165,34 @@ export function PlacementPreview() {
         <Html position={[0, 2, 0]} center pointerEvents="auto" portal={{ current: gl.domElement.parentElement as HTMLElement }}>
           <div className="flex gap-4 pointer-events-auto select-none" onPointerDown={e => e.stopPropagation()}>
             <button 
-              onPointerDown={(e) => e.stopPropagation()}
               onClick={async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('[PlacementPreview] ✓ Clicked');
-                if (!selectedItem || !previewPosition) {
-                   console.error('[PlacementPreview] No item or position!');
-                   return;
-                }
-                
-                let result;
-                if (movingFurnitureId) {
-                  // 既存家具の更新
-                  result = await roomActions.updateFurniture(
-                    movingFurnitureId,
-                    previewPosition[0],
-                    previewPosition[1],
-                    previewRotation
-                  );
-                } else {
-                  // 新規保存
-                  result = await roomActions.saveFurniture(
-                    selectedItem.id, 
-                    previewPosition[0], 
-                    previewPosition[1], 
-                    previewRotation
-                  );
-                }
-                
-                if (result.error) {
-                   console.error('[PlacementPreview] Action failed:', result.error);
-                } else {
-                   console.log('[PlacementPreview] Success:', result.data);
-                   setSelectedItem(null);
-                   setMovingFurnitureId(null);
-                }
+                console.log('[PlacementPreview] ✓ Clicked (onClick)');
+                await handleConfirm();
+              }}
+              onPointerDown={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[PlacementPreview] ✓ Pressed (onPointerDown)');
+                await handleConfirm();
               }}
               className="w-14 h-14 bg-[#4cc9f0] border-4 border-white shadow-[0_4px_10px_rgba(76,201,240,0.5)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer"
             >
               <span className="text-white font-black text-3xl">✓</span>
             </button>
             <button 
-              onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('[PlacementPreview] × Clicked');
-                setSelectedItem(null);
-                setMovingFurnitureId(null);
+                console.log('[PlacementPreview] × Clicked (onClick)');
+                handleCancel();
+              }}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[PlacementPreview] × Pressed (onPointerDown)');
+                handleCancel();
               }}
               className="w-14 h-14 bg-[#ff4d6d] border-4 border-white shadow-[0_4px_10px_rgba(255,77,109,0.5)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer"
             >

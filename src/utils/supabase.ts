@@ -10,14 +10,25 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const isBrowser = typeof window !== 'undefined';
 const isLocal = isBrowser && window.location.hostname === 'localhost';
 
-const finalUrl = (isBrowser && !isLocal) 
-  ? `${window.location.origin}/supabase-rt` 
-  : supabaseUrl;
-
 /**
- * アプリ全体で使い回すSupabaseクライアント（シングルトン）。
+ * Discord Activity 用のカスタム fetch
+ * REST API リクエストをプロキシ経由に書き換えます。
+ * これにより、WebSocket (Realtime) の接続先 URL を壊さずに HTTP 通信だけをプロキシできます。
  */
+const customFetch = (url: string, options: any) => {
+  if (isBrowser && !isLocal && url.startsWith(supabaseUrl!)) {
+    const proxiedUrl = url.replace(supabaseUrl!, `${window.location.origin}/supabase-rt`);
+    console.log(`[customFetch] Proxying request: ${url} -> ${proxiedUrl}`);
+    return fetch(proxiedUrl, options);
+  }
+  return fetch(url, options);
+};
+
 export const supabase =
-  finalUrl && supabaseAnonKey
-    ? createClient<Database>(finalUrl, supabaseAnonKey)
+  supabaseUrl && supabaseAnonKey
+    ? createClient<Database>(supabaseUrl, supabaseAnonKey, {
+        global: {
+          fetch: customFetch as any,
+        },
+      })
     : null;

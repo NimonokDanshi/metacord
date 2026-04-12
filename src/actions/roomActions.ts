@@ -29,13 +29,16 @@ export const roomActions = {
 
     if (!supabase) return { error: 'Supabase client not initialized' };
 
-    const { data, error } = await supabase
-      .from('t_server_furniture')
+    const { data, error } = await (supabase
+      .from('t_server_furniture') as any)
       .insert(newFurniture as any)
       .select()
       .single();
 
-    if (!error && data) {
+    if (error) {
+      console.error('[roomActions] saveFurniture error:', error.message, error.details);
+    } else if (data) {
+      console.log('[roomActions] saveFurniture success:', data.id);
       addFurniture(data);
     }
     
@@ -54,7 +57,10 @@ export const roomActions = {
       .delete()
       .eq('id', id);
 
-    if (!error) {
+    if (error) {
+      console.error('[roomActions] deleteFurniture error:', error.message);
+    } else {
+      console.log('[roomActions] deleteFurniture success:', id);
       removeFurniture(id);
     }
     return { success: !error, error };
@@ -78,7 +84,10 @@ export const roomActions = {
       .select()
       .single();
 
-    if (!error && data) {
+    if (error) {
+      console.error('[roomActions] updateFurniture error:', error.message, error.details);
+    } else if (data) {
+      console.log('[roomActions] updateFurniture success:', data.id);
       // ストアを更新
       const next = furnitures.map(f => f.id === id ? (data as Furniture) : f);
       setFurnitures(next);
