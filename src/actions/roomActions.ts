@@ -1,7 +1,7 @@
 import { supabase } from '@/utils/supabase';
 import { useRoomStore } from '@/stores/roomStore';
 import { useDiscordStore } from '@/stores/discordStore';
-import { NewFurniture } from '@/types/furniture';
+import { Furniture, NewFurniture } from '@/types/furniture';
 
 /**
  * 部屋の編集に関するアクション
@@ -67,8 +67,8 @@ export const roomActions = {
     const { furnitures, setFurnitures } = useRoomStore.getState();
     if (!supabase) return { error: 'Supabase client not initialized' };
 
-    const { data, error } = await supabase
-      .from('t_server_furniture')
+    const { data, error } = await (supabase
+      .from('t_server_furniture') as any)
       .update({
         pos_x: x,
         pos_z: z,

@@ -73,8 +73,8 @@ export type Database = {
           server_id: string;
           item_id: string;
           pos_x: number;
-          pos_y: number;
-          z_index: number;
+          pos_z: number;
+          rotation: number;
           metadata: Record<string, unknown>;
         };
         Insert: {
@@ -82,8 +82,8 @@ export type Database = {
           server_id: string;
           item_id: string;
           pos_x: number;
-          pos_y: number;
-          z_index?: number;
+          pos_z: number;
+          rotation?: number;
           metadata?: Record<string, unknown>;
         };
         Update: {
@@ -91,8 +91,8 @@ export type Database = {
           server_id?: string;
           item_id?: string;
           pos_x?: number;
-          pos_y?: number;
-          z_index?: number;
+          pos_z?: number;
+          rotation?: number;
           metadata?: Record<string, unknown>;
         };
       };
