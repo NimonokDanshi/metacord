@@ -1,7 +1,7 @@
-import { useRoomStore } from '@/store/roomStore';
-import { useVoxelGrid } from '@/hooks/useVoxelGrid';
-import { ROOM_ITEMS } from '@/features/room/constants/items';
-import { DynamicFurniture } from '@/features/office/components/DynamicFurniture';
+import { useRoomStore } from '@/stores/roomStore';
+import { useVoxelGrid } from '@/utils/voxelGrid';
+import { ROOM_ITEMS } from '@/constants/roomItems';
+import { DynamicFurniture } from '@/components/office/DynamicFurniture';
 import { COLORS, DESK_DEPTH, HEIGHT_DESK, HEIGHT_CHAIR_SEAT } from '@/constants/voxel';
 import { Monitor, PCCase, Keyboard, Mouse } from './OfficeEquipment';
 

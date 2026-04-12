@@ -1,6 +1,6 @@
 import React from 'react';
 import { BaseVoxelMember } from './BaseVoxelMember';
-import { getAvatarComponent } from '@/registry/avatarModels';
+import { getAvatarComponent } from '@/constants/avatarRegistry';
 import type { SeatOccupant } from '@/types/room';
 import type { VoiceState } from '@/types/discord';
 

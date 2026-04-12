@@ -1,6 +1,6 @@
 'use client';
 
-import { useDiscordStore } from '@/store/discordStore';
+import { useDiscordStore } from '@/stores/discordStore';
 import { DiscordUser, getDiscordAvatarUrl } from '@/types/discord';
 
 /**

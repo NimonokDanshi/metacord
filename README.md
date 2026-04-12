@@ -14,15 +14,53 @@ Discordの音声/テキストチャンネルと連動し、参加者が同一の
 metacord/
 ├── .github/workflows/ # CI/CD (GitHub Actions)
 ├── src/
-│   ├── app/           # Pages & Layouts
-│   ├── components/    # Components
-│   ├── constants/     # Master Data
-│   ├── features/      # Feature Modules
-│   ├── lib/           # Library Config
-│   └── types/         # Types
+│   ├── app/           # 画面（Entry Points）
+│   ├── actions/       # アクション（APIリクエスト、保存ロジック等）
+│   ├── components/    # すべてのUIコンポーネント（View）
+│   ├── dispatcher/    # 同期・購読などのオーケストレーター
+│   ├── stores/        # 状態定義（Zustand）
+│   ├── constants/     # マスターデータ・定数
+│   ├── utils/         # 汎用ユーティリティ・インフラ設定
+│   └── types/         # 型定義
 ├── supabase/          # Migrations & CLI Config
 ├── document/          # Design Docs
 └── public/            # Static Assets
+```
+
+## アーキテクチャ (Flux基準)
+
+本プロジェクトでは、役割ごとにディレクトリを分離した Flux 構造を採用しています。
+
+### フォルダの役割
+
+- **`actions/`**: ユーザー操作に端を発する処理（DB保存、外部APIコールなど）を記述。
+- **`components/`**: React/PixiJS のコンポーネント。表示に専念。
+- **`dispatcher/`**: Supabase Realtime の購読など、複数の Store や Action を跨ぐ連続的な処理を制御。
+- **`stores/`**: `Zustand` を用いたアプリケーションのグローバル状態管理。
+- **`constants/`**: アバターの一覧定義など、アプリケーション全体で不変の静的データ。
+- **`utils/`**: Supabase クライアントや共通の計算ロジックなどの汎用ツール。
+
+### データの流れ
+
+```mermaid
+sequenceDiagram
+    participant UI as components
+    participant Disp as dispatcher
+    participant Act as actions
+    participant Store as stores
+    participant API as Supabase/Discord
+
+    Note over UI, API: 1. Actionの実行
+    UI->>Act: ユーザー操作
+    Act->>API: サーバー更新
+    API-->>Act: レスポンス
+
+    Note over Disp: 2. リアルタイム同期
+    API-->>Disp: 変更通知
+    Disp->>Store: State更新指示
+
+    Note over UI: 3. Viewの更新
+    Store-->>UI: State変更を検知して再描画
 ```
 
 ---

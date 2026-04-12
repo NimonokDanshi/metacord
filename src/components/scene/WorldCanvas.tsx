@@ -8,16 +8,16 @@ import { COLORS } from '@/constants/voxel';
 import { VoxelRoom } from '../office/VoxelRoom';
 import { OfficeFurniture } from '../office/OfficeFurniture';
 import { VoxelMember } from '../members/VoxelMember';
-import { useRoom } from '@/hooks/useRoom';
-import { useRoomStore } from '@/store/roomStore';
-import { useVoxelGrid } from '@/hooks/useVoxelGrid';
-import { useDiscordStore } from '@/store/discordStore';
+import { useRoom } from '@/dispatcher/roomDispatcher';
+import { useRoomStore } from '@/stores/roomStore';
+import { useVoxelGrid } from '@/utils/voxelGrid';
+import { useDiscordStore } from '@/stores/discordStore';
 import { getDiscordAvatarUrl } from '@/types/discord';
 import { SeatOccupant, AvatarType } from '@/types/room';
 import { VoxelModal } from '../ui/VoxelModal';
 import { AvatarSelector } from '../ui/AvatarSelector';
-import { FurnitureBottomBar } from '@/features/room/components/ui/FurnitureBottomBar';
-import { PlacementPreview } from '@/features/room/components/scene/PlacementPreview';
+import { FurnitureBottomBar } from '@/components/ui/FurnitureBottomBar';
+import { PlacementPreview } from '@/components/scene/PlacementPreview';
 
 export function WorldCanvas() {
   // Supabase/Presence の同期を開始

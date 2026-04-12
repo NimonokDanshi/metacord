@@ -1,6 +1,6 @@
 import React from 'react';
 import { Html } from '@react-three/drei';
-import { useAvatarLogic } from '@/hooks/useAvatarLogic';
+import { useAvatarLogic } from '@/actions/avatarActions';
 import type { SeatOccupant } from '@/types/room';
 import type { VoiceState } from '@/types/discord';
 

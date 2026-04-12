@@ -3,17 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { useThree, useFrame } from '@react-three/fiber';
-import { useRoomStore } from '@/store/roomStore';
-import { useVoxelGrid } from '@/hooks/useVoxelGrid';
-import { ROOM_ITEMS } from '../../constants/items';
-import { DynamicFurniture } from '@/features/office/components/DynamicFurniture';
-import { useRoomEditor } from '../../hooks/useRoomEditor';
+import { useRoomStore } from '@/stores/roomStore';
+import { useVoxelGrid } from '@/utils/voxelGrid';
+import { ROOM_ITEMS } from '@/constants/roomItems';
+import { DynamicFurniture } from '@/components/office/DynamicFurniture';
+import { roomActions } from '@/actions/roomActions';
 import { Html } from '@react-three/drei';
 
 export function PlacementPreview() {
   const { isEditing, selectedItemId, previewPosition, previewRotation, setPreviewPosition, setPreviewRotation, setSelectedItem, getOccupiedGrids } = useRoomStore();
   const { getGridFromWorld, getWorldFromGrid, checkCollision } = useVoxelGrid();
-  const { saveFurniture } = useRoomEditor();
+  // roomActions を直接利用するため、ここではフックの呼び出しを削除
   const { raycaster, mouse, camera } = useThree();
   const [canPlace, setCanPlace] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -122,7 +122,7 @@ export function PlacementPreview() {
                    return;
                 }
                 
-                const { data, error } = await saveFurniture(
+                const { data, error } = await roomActions.saveFurniture(
                   selectedItem.id, 
                   previewPosition[0], 
                   previewPosition[1], 

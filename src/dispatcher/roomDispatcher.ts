@@ -2,13 +2,13 @@
 
 import { useEffect, useRef } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
-import { useDiscordStore } from '@/store/discordStore';
-import { useRoomStore } from '@/store/roomStore';
+import { supabase } from '@/utils/supabase';
+import { useDiscordStore } from '@/stores/discordStore';
+import { useRoomStore } from '@/stores/roomStore';
 import type { PresencePayload, SeatOccupant } from '@/types/room';
 import { getDiscordAvatarUrl } from '@/types/discord';
 import { GRID_SIZE_X, GRID_SIZE_Z } from '@/constants/voxel';
-import { Furniture } from '@/features/room/types/furniture';
+import { Furniture } from '@/types/furniture';
 
 const MAX_SEATS = GRID_SIZE_X * GRID_SIZE_Z;
 const ISLAND_SEATS = [51, 53, 55, 87, 89, 91];

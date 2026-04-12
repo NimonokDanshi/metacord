@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useDiscordStore } from '@/store/discordStore';
+import { useDiscordStore } from '@/stores/discordStore';
 
 export default function DebugOverlay() {
   const [showDebug, setShowDebug] = useState(false);

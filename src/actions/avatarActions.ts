@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { useVoxelGrid } from '@/hooks/useVoxelGrid';
+import { useVoxelGrid } from '@/utils/voxelGrid';
 import { HEIGHT_MEMBER_SITTING } from '@/constants/voxel';
 import type { SeatOccupant } from '@/types/room';
 import type { VoiceState } from '@/types/discord';

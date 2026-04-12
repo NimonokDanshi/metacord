@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useRoomStore } from '@/store/roomStore';
-import { ROOM_ITEMS } from '../../constants/items';
+import { useRoomStore } from '@/stores/roomStore';
+import { ROOM_ITEMS } from '@/constants/roomItems';
 
 export function FurnitureBottomBar() {
   const { isEditing, selectedItemId, setSelectedItem } = useRoomStore();

@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useDiscordUser } from '@/hooks/useDiscordUser';
+import { useDiscordUser } from '@/utils/useDiscordUser';
 
 export default function UserProfile() {
   const { user, avatarUrl, displayName } = useDiscordUser();

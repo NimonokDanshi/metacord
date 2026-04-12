@@ -1,9 +1,9 @@
 import React from 'react';
 import { VoxelButton } from './VoxelButton';
-import { useDiscordStore } from '@/store/discordStore';
+import { useDiscordStore } from '@/stores/discordStore';
 import { AvatarType } from '@/types/room';
-import { supabase } from '@/lib/supabase';
-import { AVATAR_REGISTRY } from '@/registry/avatarModels';
+import { supabase } from '@/utils/supabase';
+import { AVATAR_REGISTRY } from '@/constants/avatarRegistry';
 import { AvatarPreview } from './AvatarPreview';
 
 export function AvatarSelector() {

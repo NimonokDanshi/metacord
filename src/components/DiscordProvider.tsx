@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { discordSdk, setupDiscordProxy } from '@/lib/discord';
-import { useDiscordStore } from '@/store/discordStore';
+import { discordSdk, setupDiscordProxy } from '@/utils/discord';
+import { useDiscordStore } from '@/stores/discordStore';
 import { DiscordUser, DiscordChannel, VoiceState, getDiscordAvatarUrl } from '@/types/discord';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/utils/supabase';
 import { AvatarType } from '@/types/room';
 
 import DebugOverlay from './DebugOverlay';

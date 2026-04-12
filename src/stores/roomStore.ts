@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { SeatOccupant } from '@/types/room';
-import { Furniture } from '@/features/room/types/furniture';
+import { Furniture } from '@/types/furniture';
 
 interface RoomStore {
   /** 現在の在室者リスト（user_id → SeatOccupant） */

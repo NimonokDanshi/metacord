@@ -3,9 +3,9 @@
 import React from 'react';
 import { Workstation, CustomWorkstation, Chair } from '@/components/office/OfficeFurniture';
 import { PottedPlant } from '@/components/office/OfficeEquipment';
-import { RoomItem } from '@/features/room/constants/items';
-import { useRoomStore } from '@/store/roomStore';
-import { useVoxelGrid } from '@/hooks/useVoxelGrid';
+import { RoomItem } from '@/constants/roomItems';
+import { useRoomStore } from '@/stores/roomStore';
+import { useVoxelGrid } from '@/utils/voxelGrid';
 
 interface DynamicFurnitureProps {
   item: RoomItem;
