@@ -127,6 +127,24 @@ export function CustomWorkstation({ pos, rotation = 0 }: { pos: { x: number; y: 
   );
 }
 
+export function Wall() {
+  return (
+    <mesh castShadow receiveShadow position={[0, 1.5, -0.45]}>
+      <boxGeometry args={[1, 3, 0.1]} />
+      <meshStandardMaterial color={COLORS.WALL} />
+    </mesh>
+  );
+}
+
+export function Floor() {
+  return (
+    <mesh receiveShadow position={[0, -0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[1, 1]} />
+      <meshStandardMaterial color={COLORS.FLOOR} />
+    </mesh>
+  );
+}
+
 
 /**
  * サーバーに配置された家具を動的に描画するコンポーネント

@@ -1,4 +1,19 @@
-export type ItemType = 'desk' | 'chair' | 'plant' | 'decoration' | 'wall' | 'floor';
+export type ItemType = 'desk' | 'chair' | 'furniture' | 'wall' | 'floor' | 'background' | 'lighting';
+
+export interface RoomCategory {
+  id: ItemType;
+  name: string;
+}
+
+export const ROOM_CATEGORIES: RoomCategory[] = [
+  { id: 'desk', name: '椅子机セット' },
+  { id: 'chair', name: '椅子' },
+  { id: 'furniture', name: '家具' },
+  { id: 'wall', name: '壁紙' },
+  { id: 'floor', name: '床' },
+  { id: 'background', name: '背景' },
+  { id: 'lighting', name: '照明' },
+];
 
 export interface RoomItem {
   id: string;
@@ -56,10 +71,29 @@ export const ROOM_ITEMS: RoomItem[] = [
   {
     id: 'potted-plant',
     name: '観葉植物',
-    type: 'plant',
+    type: 'furniture',
     sizeX: 1,
     sizeZ: 1,
     isSeat: false,
     modelComponent: 'PottedPlant',
+  },
+  // 以下、空のカテゴリー確認用プレースホルダ
+  {
+    id: 'sample-wall',
+    name: 'サンプル壁紙',
+    type: 'wall',
+    sizeX: 1,
+    sizeZ: 1,
+    isSeat: false,
+    modelComponent: 'Wall',
+  },
+  {
+    id: 'sample-floor',
+    name: 'サンプル床',
+    type: 'floor',
+    sizeX: 1,
+    sizeZ: 1,
+    isSeat: false,
+    modelComponent: 'Floor',
   },
 ];

@@ -289,7 +289,7 @@ export function useRoom() {
       setMySeatIndex(null);
       setMyFurnitureId(null);
       
-      if (channelRef.current) {
+      if (channelRef.current && supabase) {
         const chan = channelRef.current;
         const fChan = (chan as any)._furnitureChannel;
         if (fChan) {

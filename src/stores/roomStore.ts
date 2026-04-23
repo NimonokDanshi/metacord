@@ -58,6 +58,8 @@ interface RoomStore {
   previewRotation: number;
   /** 現在移動中の既存家具のID */
   movingFurnitureId: string | null;
+  /** 現在選択中のインベントリカテゴリーID */
+  selectedCategoryId: string;
 
   /** 編集モードの切り替え */
   setEditing: (isEditing: boolean) => void;
@@ -69,6 +71,8 @@ interface RoomStore {
   setPreviewRotation: (rotation: number) => void;
   /** 移動中の家具IDをセット */
   setMovingFurnitureId: (id: string | null) => void;
+  /** インベントリカテゴリーをセット */
+  setCategoryId: (categoryId: string) => void;
 }
 
 export const useRoomStore = create<RoomStore>((set, get) => ({
@@ -83,6 +87,7 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   previewPosition: null,
   previewRotation: 0,
   movingFurnitureId: null,
+  selectedCategoryId: 'desk',
   // 家具データの初期値
   furnitures: [],
 
@@ -139,4 +144,5 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   setPreviewPosition: (previewPosition) => set({ previewPosition }),
   setPreviewRotation: (rotation) => set({ previewRotation: rotation }),
   setMovingFurnitureId: (movingFurnitureId) => set({ movingFurnitureId }),
+  setCategoryId: (selectedCategoryId) => set({ selectedCategoryId }),
 }));

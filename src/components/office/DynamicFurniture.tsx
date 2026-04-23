@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Workstation, CustomWorkstation, Chair } from '@/components/office/OfficeFurniture';
+import { Workstation, CustomWorkstation, Chair, Wall, Floor } from '@/components/office/OfficeFurniture';
 import { PottedPlant } from '@/components/office/OfficeEquipment';
 import { RoomItem } from '@/constants/roomItems';
 import { useRoomStore } from '@/stores/roomStore';
@@ -79,6 +79,8 @@ export function DynamicFurniture({
 
       {item.modelComponent === 'Chair' && <Chair pos={{ x: 0, y: 0, z: 0 }} rotation={0} />}
       {item.modelComponent === 'PottedPlant' && <PottedPlant />}
+      {item.modelComponent === 'Wall' && <Wall />}
+      {item.modelComponent === 'Floor' && <Floor />}
       
       {/* プレビュー時の色オーバーライド用フィルター（簡易実装） */}
       {colorOverride && (
