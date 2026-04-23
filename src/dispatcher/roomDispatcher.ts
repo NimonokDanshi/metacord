@@ -140,19 +140,21 @@ export function useRoom() {
     // --- サーバー情報の自動登録 (m_servers) ---
     const roomId = channelId || instanceId || 'local-dev-room';
     const initServer = async () => {
-      if (!supabase) return;
+      if (!supabase || channelRef.current !== channel) return;
       
       const msg = `[useRoom] Registering server: ${roomId}`;
       console.log(msg);
       useDiscordStore.getState().addLogMessage(msg);
 
       try {
-        const { error } = await (supabase.from('m_servers') as any).upsert({
+        const { error } = await supabase.from('m_servers').upsert({
           server_id: roomId,
           name: channelId ? 'Discord Channel' : 'Local Dev Room',
           layout_id: 'default',
           last_activity_at: new Date().toISOString(),
         }, { onConflict: 'server_id' });
+
+        if (channelRef.current !== channel) return;
 
         if (error) {
           const errBox = `[useRoom] Server registration failed: ${error.message}`;
@@ -174,21 +176,32 @@ export function useRoom() {
 
     // 家具データの同期 & チャンネルの購読を開始する関数
     const fetchAndSubscribe = async () => {
-      if (!supabase) return;
+      if (!supabase || channelRef.current !== channel) return;
 
       // 1. 初期家具データのロード
       const { data, error } = await supabase
         .from('t_server_furniture')
         .select('*')
         .eq('server_id', roomId);
+      
+      if (channelRef.current !== channel) return;
           
       if (!error && data) {
         setFurnitures(data);
       }
 
       // 2. 家具データの同期監視
+      const furnitureChannelName = `${roomKey}:furniture`;
+      // 既存の同名チャンネルがあれば削除（再試行時などの衝突回避）
+      const existing = supabase.getChannels().find(c => c.topic === `realtime:${furnitureChannelName}`);
+      if (existing) {
+        await supabase.removeChannel(existing);
+      }
+      
+      if (channelRef.current !== channel) return;
+
       const furnitureChannel = supabase
-        .channel(`${roomKey}:furniture`)
+        .channel(furnitureChannelName)
         .on(
           'postgres_changes',
           {
@@ -236,6 +249,8 @@ export function useRoom() {
 
       // 3. Presence の開始
       channel.subscribe(async (status) => {
+        if (channelRef.current !== channel) return;
+
         const pmsg = `[useRoom] Presence status: ${status}`;
         console.log(pmsg);
         useDiscordStore.getState().addLogMessage(pmsg);
@@ -273,9 +288,14 @@ export function useRoom() {
       setConnected(false);
       setMySeatIndex(null);
       setMyFurnitureId(null);
-      channel.unsubscribe();
-      if ((channel as any)._furnitureChannel) {
-        (channel as any)._furnitureChannel.unsubscribe();
+      
+      if (channelRef.current) {
+        const chan = channelRef.current;
+        const fChan = (chan as any)._furnitureChannel;
+        if (fChan) {
+          supabase.removeChannel(fChan);
+        }
+        supabase.removeChannel(chan);
       }
       channelRef.current = null;
     };

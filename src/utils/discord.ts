@@ -5,7 +5,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 
 // ブラウザ環境かつ、frame_id が URL パラメータに存在するかチェック
 const isBrowser = typeof window !== 'undefined';
-const hasFrameId = isBrowser && new URLSearchParams(window.location.search).has('frame_id');
+export const hasFrameId = isBrowser && new URLSearchParams(window.location.search).has('frame_id');
 
 export const discordSdk = (isBrowser && hasFrameId)
     ? new DiscordSDK(discordClientId || 'mock-id')

@@ -15,6 +15,7 @@ export type Database = {
           name: string;
           layout_id: string;
           metadata: Record<string, unknown>;
+          last_activity_at: string;
           created_at: string;
         };
         Insert: {
@@ -22,6 +23,7 @@ export type Database = {
           name: string;
           layout_id?: string;
           metadata?: Record<string, unknown>;
+          last_activity_at?: string;
           created_at?: string;
         };
         Update: {
@@ -29,6 +31,7 @@ export type Database = {
           name?: string;
           layout_id?: string;
           metadata?: Record<string, unknown>;
+          last_activity_at?: string;
           created_at?: string;
         };
       };
