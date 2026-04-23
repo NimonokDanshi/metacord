@@ -88,17 +88,17 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
 
           // Supabaseへのダミー登録（アバター選択などを試せるように）
           if (supabase) {
-            const { data: upsertedUser } = await (supabase.from('m_users') as any)
+            const { data: upsertedUser } = await supabase.from('m_users')
               .upsert({
                 user_id: mockUser.id,
-                display_name: mockUser.global_name,
+                display_name: mockUser.global_name || mockUser.username,
                 last_seen_at: new Date().toISOString(),
               }, { onConflict: 'user_id' })
               .select()
               .single();
             
-            if (upsertedUser && (upsertedUser as any).avatar_id) {
-              setAvatarType((upsertedUser as any).avatar_id as AvatarType);
+            if (upsertedUser?.avatar_id) {
+              setAvatarType(upsertedUser.avatar_id as AvatarType);
             }
           }
 
@@ -168,7 +168,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
           // Supabase のプロフィール同期
           if (supabase) {
             log('Supabase プロフィール同期中...');
-            const { data: upsertedUser, error: upsertError } = await (supabase.from('m_users') as any)
+            const { data: upsertedUser, error: upsertError } = await supabase.from('m_users')
               .upsert({
                 user_id: discordUser.id,
                 display_name: discordUser.global_name || discordUser.username,
@@ -181,9 +181,9 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
             if (upsertError) {
               log('Supabase 同期エラー:', upsertError.message);
             } else if (upsertedUser) {
-              log('Supabase 同期成功:', (upsertedUser as any).avatar_id);
-              if ((upsertedUser as any).avatar_id) {
-                setAvatarType((upsertedUser as any).avatar_id as AvatarType);
+              log('Supabase 同期成功:', upsertedUser.avatar_id);
+              if (upsertedUser.avatar_id) {
+                setAvatarType(upsertedUser.avatar_id as AvatarType);
               }
             }
           }

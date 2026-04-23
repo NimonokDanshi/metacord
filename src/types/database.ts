@@ -1,8 +1,16 @@
 /**
  * Supabase PostgreSQL のテーブル型定義
- * ※ Supabase CLI の `supabase gen types typescript` で自動生成したものと
- *    置き換え可能なように同じ構造で定義しています。
+ * ※ Supabase CLI の形式に準拠
  */
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
 export type Database = {
   public: {
     Tables: {
@@ -14,7 +22,7 @@ export type Database = {
           server_id: string;
           name: string;
           layout_id: string;
-          metadata: Record<string, unknown>;
+          metadata: Json;
           last_activity_at: string;
           created_at: string;
         };
@@ -22,7 +30,7 @@ export type Database = {
           server_id: string;
           name: string;
           layout_id?: string;
-          metadata?: Record<string, unknown>;
+          metadata?: Json;
           last_activity_at?: string;
           created_at?: string;
         };
@@ -30,15 +38,15 @@ export type Database = {
           server_id?: string;
           name?: string;
           layout_id?: string;
-          metadata?: Record<string, unknown>;
+          metadata?: Json;
           last_activity_at?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
 
       /**
        * 全ユーザーのプロフィールを管理するマスタテーブル
-       * マイデスク設定(PC・小物等)は metadata に格納
        */
       m_users: {
         Row: {
@@ -46,7 +54,7 @@ export type Database = {
           display_name: string;
           discord_avatar_url: string | null;
           avatar_id: string;
-          metadata: Record<string, unknown>;
+          metadata: Json;
           last_seen_at: string;
         };
         Insert: {
@@ -54,7 +62,7 @@ export type Database = {
           display_name: string;
           discord_avatar_url?: string | null;
           avatar_id?: string;
-          metadata?: Record<string, unknown>;
+          metadata?: Json;
           last_seen_at?: string;
         };
         Update: {
@@ -62,9 +70,10 @@ export type Database = {
           display_name?: string;
           discord_avatar_url?: string | null;
           avatar_id?: string;
-          metadata?: Record<string, unknown>;
+          metadata?: Json;
           last_seen_at?: string;
         };
+        Relationships: [];
       };
 
       /**
@@ -78,7 +87,7 @@ export type Database = {
           pos_x: number;
           pos_z: number;
           rotation: number;
-          metadata: Record<string, unknown>;
+          metadata: Json;
         };
         Insert: {
           id?: string;
@@ -87,7 +96,7 @@ export type Database = {
           pos_x: number;
           pos_z: number;
           rotation?: number;
-          metadata?: Record<string, unknown>;
+          metadata?: Json;
         };
         Update: {
           id?: string;
@@ -96,17 +105,35 @@ export type Database = {
           pos_x?: number;
           pos_z?: number;
           rotation?: number;
-          metadata?: Record<string, unknown>;
+          metadata?: Json;
         };
+        Relationships: [
+          {
+            foreignKeyName: "t_server_furniture_server_id_fkey";
+            columns: ["server_id"];
+            isOneToOne: false;
+            referencedRelation: "m_servers";
+            referencedColumns: ["server_id"];
+          }
+        ];
       };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
 };
 
-// 各テーブルの Row 型のエイリアス（使いやすいように）
+// 各テーブルの Row 型のエイリアス
 export type ServerRow = Database['public']['Tables']['m_servers']['Row'];
 export type UserRow = Database['public']['Tables']['m_users']['Row'];
 export type ServerFurnitureRow = Database['public']['Tables']['t_server_furniture']['Row'];
