@@ -77,6 +77,18 @@ export function PlacementPreview() {
     setMovingFurnitureId(null);
   };
 
+  const handleDelete = async () => {
+    if (!movingFurnitureId) return;
+    
+    console.log('[PlacementPreview] Deleting furniture:', movingFurnitureId);
+    const result = await roomActions.deleteFurniture(movingFurnitureId);
+    
+    if (result.success) {
+      setSelectedItem(null);
+      setMovingFurnitureId(null);
+    }
+  };
+
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
       // ターゲットが Canvas 本体である場合のみドラッグを開始 (ボタン等のクリックを無視)
@@ -160,44 +172,65 @@ export function PlacementPreview() {
         <DynamicFurniture item={selectedItem} opacity={0.6} />
       </group>
 
-      {/* 配置決定・キャンセルボタン (3D追従) */}
-      {canPlace && !isDragging && (
+      {/* 配置決定・キャンセル・削除ボタン (3D追従) */}
+      {!isDragging && (
         <Html position={[0, 2, 0]} center pointerEvents="auto" portal={{ current: gl.domElement.parentElement as HTMLElement }}>
-          <div className="flex gap-4 pointer-events-auto select-none" onPointerDown={e => e.stopPropagation()}>
-            <button 
-              onClick={async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('[PlacementPreview] ✓ Clicked (onClick)');
-                await handleConfirm();
-              }}
-              onPointerDown={async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('[PlacementPreview] ✓ Pressed (onPointerDown)');
-                await handleConfirm();
-              }}
-              className="w-14 h-14 bg-[#4cc9f0] border-4 border-white shadow-[0_4px_10px_rgba(76,201,240,0.5)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer"
-            >
-              <span className="text-white font-black text-3xl">✓</span>
-            </button>
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('[PlacementPreview] × Clicked (onClick)');
-                handleCancel();
-              }}
-              onPointerDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('[PlacementPreview] × Pressed (onPointerDown)');
-                handleCancel();
-              }}
-              className="w-14 h-14 bg-[#ff4d6d] border-4 border-white shadow-[0_4px_10px_rgba(255,77,109,0.5)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer"
-            >
-              <span className="text-white font-black text-3xl">×</span>
-            </button>
+          <div className="flex flex-col items-center gap-3 pointer-events-auto select-none" onPointerDown={e => e.stopPropagation()}>
+            <div className="flex gap-4">
+              {/* 確定ボタン: 配置可能な場合のみ表示 */}
+              {canPlace && (
+                <button 
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('[PlacementPreview] ✓ Clicked');
+                    await handleConfirm();
+                  }}
+                  className="w-14 h-14 bg-[#4cc9f0] border-4 border-white shadow-[0_4px_10px_rgba(76,201,240,0.5)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                >
+                  <span className="text-white font-black text-3xl">✓</span>
+                </button>
+              )}
+
+              {/* キャンセルボタン: 常に表示 */}
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('[PlacementPreview] × Clicked');
+                  handleCancel();
+                }}
+                className="w-14 h-14 bg-[#ff4d6d] border-4 border-white shadow-[0_4px_10px_rgba(255,77,109,0.5)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer"
+              >
+                <span className="text-white font-black text-3xl">×</span>
+              </button>
+
+              {/* 削除ボタン: 既存家具の移動中のみ表示 (黄色) */}
+              {movingFurnitureId && (
+                <button 
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    await handleDelete();
+                  }}
+                  className="w-14 h-14 bg-[#fee440] border-4 border-white shadow-[0_4px_10px_rgba(254,228,64,0.5)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* 配置不可時の警告ラベル */}
+            {!canPlace && (
+              <div className="bg-[#ff4d6d] px-3 py-1 border-2 border-white shadow-md animate-bounce">
+                <span className="text-white font-black text-[10px] uppercase tracking-tighter">
+                  Cannot Place Here
+                </span>
+              </div>
+            )}
           </div>
         </Html>
       )}
