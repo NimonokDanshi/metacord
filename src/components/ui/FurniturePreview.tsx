@@ -29,7 +29,6 @@ export function FurniturePreview({ item }: Props) {
             environment={null}
             adjustCamera={1.5}
             shadows="contact"
-            center
           >
             <Center>
               <DynamicFurniture 
