@@ -19,13 +19,15 @@ import { VoxelModal } from '../ui/VoxelModal';
 import { AvatarSelector } from '../ui/AvatarSelector';
 import { FurnitureBottomBar } from '@/components/ui/FurnitureBottomBar';
 import { PlacementPreview } from '@/components/scene/PlacementPreview';
+import { MySetSelector } from '../ui/MySetSelector';
 
 export function WorldCanvas() {
   // Supabase/Presence の同期を開始
   useRoom();
   const { occupants, isEditing, setEditing, furnitures } = useRoomStore();
   const { voiceStates, addLogMessage } = useDiscordStore();
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = React.useState(false);
+  const [isMySetModalOpen, setIsMySetModalOpen] = React.useState(false);
 
   // 統合されたメンバーリストを作成
   const mergedMembers = React.useMemo(() => {
@@ -100,7 +102,7 @@ export function WorldCanvas() {
       {/* UI Overlay */}
       <div className="absolute top-6 right-6 z-[50] flex flex-col gap-4 items-end">
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => setIsAvatarModalOpen(true)}
           className="group relative cursor-pointer"
         >
           {/* Voxel-artish Button Label */}
@@ -112,6 +114,20 @@ export function WorldCanvas() {
           {/* Tiny pixels decoration */}
           <div className="absolute -top-1 -left-1 w-2 h-2 bg-white/40" />
           <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white/40" />
+        </button>
+
+        {/* MySet Button */}
+        <button
+          onClick={() => setIsMySetModalOpen(true)}
+          className="group relative cursor-pointer"
+        >
+          <div className="bg-[#4361ee] border-4 border-[#3f37c9] px-6 py-2 shadow-[4px_4px_0_0_#3a0ca3] group-hover:translate-y-1 group-hover:shadow-none transition-all">
+            <span className="text-white font-black text-xl tracking-[0.2em] uppercase drop-shadow-[2px_2px_0_#3a0ca3]">
+              MySet
+            </span>
+          </div>
+          <div className="absolute -top-1 -left-1 w-2 h-2 bg-white/20" />
+          <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white/20" />
         </button>
 
         {/* Edit Room Button */}
@@ -136,11 +152,19 @@ export function WorldCanvas() {
 
 
       <VoxelModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        isOpen={isAvatarModalOpen} 
+        onClose={() => setIsAvatarModalOpen(false)} 
         title="Select Your Avatar"
       >
         <AvatarSelector />
+      </VoxelModal>
+
+      <VoxelModal 
+        isOpen={isMySetModalOpen} 
+        onClose={() => setIsMySetModalOpen(false)} 
+        title="Customize Your Workspace"
+      >
+        <MySetSelector />
       </VoxelModal>
 
       <Canvas shadows={{ type: THREE.PCFShadowMap }} gl={{ antialias: true, stencil: false }}>

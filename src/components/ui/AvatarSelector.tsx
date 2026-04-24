@@ -1,10 +1,11 @@
 import React from 'react';
-import { VoxelButton } from './VoxelButton';
 import { useDiscordStore } from '@/stores/discordStore';
 import { AvatarType } from '@/types/room';
 import { supabase } from '@/utils/supabase';
 import { AVATAR_REGISTRY } from '@/constants/avatarRegistry';
 import { AvatarPreview } from './AvatarPreview';
+import { SelectionGrid } from './SelectionGrid';
+import { SelectionCard } from './SelectionCard';
 
 export function AvatarSelector() {
   const { user, avatarType, setAvatarType, addLogMessage } = useDiscordStore();
@@ -34,7 +35,7 @@ export function AvatarSelector() {
   const displayAvatars = [...AVATAR_REGISTRY];
   while (displayAvatars.length < 8) {
     displayAvatars.push({
-      id: 'locked',
+      id: 'locked' as AvatarType,
       name: 'Coming soon...',
       description: 'More avatars are under development.',
       component: () => null
@@ -42,45 +43,23 @@ export function AvatarSelector() {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+    <SelectionGrid>
       {displayAvatars.map((avatar, index) => {
         const isSelected = avatarType === avatar.id;
         const isLocked = avatar.id === 'locked';
 
         return (
-          <div 
+          <SelectionCard
             key={`${avatar.id}-${index}`}
-            className={`flex flex-col p-3 border-2 transition-all duration-200 ${
-              isSelected 
-              ? "bg-[#4cc9f0]/10 border-[#4cc9f0] shadow-[4px_4px_0_0_#4cc9f0]" 
-              : "bg-black/20 border-white/10 hover:border-white/30"
-            } ${isLocked ? "opacity-50 grayscale" : ""}`}
-          >
-            {/* 3D Preview */}
-            <div className={`aspect-square mb-3 flex items-center justify-center bg-black/40 border-2 border-white/5 overflow-hidden`}>
-              {!isLocked ? (
-                <AvatarPreview component={avatar.component} />
-              ) : (
-                <span className="text-4xl">🔒</span>
-              )}
-            </div>
-
-            <h3 className="text-white font-bold text-[11px] mb-1 truncate uppercase tracking-tighter">{avatar.name}</h3>
-            <p className="text-white/40 text-[9px] leading-tight h-8 overflow-hidden mb-3">
-              {avatar.description}
-            </p>
-
-            <VoxelButton 
-              disabled={isLocked || isSelected}
-              variant={isSelected ? "primary" : "secondary"}
-              className="w-full !text-[9px] !py-1"
-              onClick={() => handleSelect(avatar.id)}
-            >
-              {isSelected ? "SELECTED" : isLocked ? "LOCKED" : "SELECT"}
-            </VoxelButton>
-          </div>
+            name={avatar.name}
+            description={avatar.description}
+            preview={!isLocked ? <AvatarPreview component={avatar.component} /> : null}
+            isSelected={isSelected}
+            isLocked={isLocked}
+            onClick={() => handleSelect(avatar.id)}
+          />
         );
       })}
-    </div>
+    </SelectionGrid>
   );
 }

@@ -6,6 +6,7 @@ import { useDiscordStore } from '@/stores/discordStore';
 import { DiscordUser, DiscordChannel, VoiceState, getDiscordAvatarUrl } from '@/types/discord';
 import { supabase } from '@/utils/supabase';
 import { AvatarType } from '@/types/room';
+import { parseMySet } from '@/utils/userMetadataUtil';
 
 import DebugOverlay from './DebugOverlay';
 
@@ -16,7 +17,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
     user, instanceId, channelId, guildId, voiceStates, isReady,
     rawChannelData, logMessages, avatarType,
     setUser, setReady, setInfo, setVoiceStates, updateVoiceState, removeVoiceState,
-    setRawChannelData, addLogMessage, setAvatarType
+    setRawChannelData, addLogMessage, setAvatarType, setMySet
   } = useDiscordStore();
 
   // 簡易ログ出力関数
@@ -99,6 +100,9 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
             
             if (upsertedUser?.avatar_id) {
               setAvatarType(upsertedUser.avatar_id as AvatarType);
+            }
+            if (upsertedUser?.metadata) {
+              setMySet(parseMySet(upsertedUser.metadata));
             }
           }
 
@@ -185,6 +189,9 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
               if (upsertedUser.avatar_id) {
                 setAvatarType(upsertedUser.avatar_id as AvatarType);
               }
+              if (upsertedUser.metadata) {
+                setMySet(parseMySet(upsertedUser.metadata));
+              }
             }
           }
 
@@ -247,7 +254,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
     }
 
     setupDiscord();
-  }, [setUser, setReady, setInfo, setVoiceStates, updateVoiceState, removeVoiceState, setAvatarType, setRawChannelData]);
+  }, [setUser, setReady, setInfo, setVoiceStates, updateVoiceState, removeVoiceState, setAvatarType, setMySet, setRawChannelData]);
 
   // エラー画面
   if (error) {

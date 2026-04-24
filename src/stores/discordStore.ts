@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { DiscordUser, VoiceState } from '@/types/discord';
 import { AvatarType } from '@/types/room';
+import { MySet, DEFAULT_MYSET } from '@/utils/userMetadataUtil';
 
 interface DiscordStore {
   user: DiscordUser | null;
@@ -9,6 +10,7 @@ interface DiscordStore {
   guildId: string | null;
   voiceStates: VoiceState[];
   avatarType: AvatarType;
+  mySet: MySet;
   isReady: boolean;
   rawChannelData: any;
   logMessages: string[];
@@ -16,6 +18,7 @@ interface DiscordStore {
   setReady: (ready: boolean) => void;
   setInfo: (info: { instanceId: string; channelId: string | null; guildId: string | null }) => void;
   setAvatarType: (type: AvatarType) => void;
+  setMySet: (mySet: MySet) => void;
   setVoiceStates: (states: VoiceState[]) => void;
   updateVoiceState: (state: VoiceState) => void;
   removeVoiceState: (userId: string) => void;
@@ -30,6 +33,7 @@ export const useDiscordStore = create<DiscordStore>((set) => ({
   guildId: null,
   voiceStates: [],
   avatarType: 'default',
+  mySet: DEFAULT_MYSET,
   isReady: false,
   rawChannelData: null,
   logMessages: [],
@@ -37,6 +41,7 @@ export const useDiscordStore = create<DiscordStore>((set) => ({
   setReady: (ready) => set({ isReady: ready }),
   setInfo: (info) => set({ ...info }),
   setAvatarType: (avatarType) => set({ avatarType }),
+  setMySet: (mySet) => set({ mySet }),
   setVoiceStates: (voiceStates) => set({ voiceStates }),
   updateVoiceState: (newState) => set((state) => {
     const exists = state.voiceStates.find((s) => s.user.id === newState.user.id);
