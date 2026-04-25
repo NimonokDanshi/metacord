@@ -217,12 +217,18 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
             await fetchChannelData();
 
             handleVoiceStateUpdate = (event: any) => {
+              const username = event.user?.global_name || event.user?.username || 'Unknown';
+              log(`[VoiceEvent] ${username} -> Channel: ${event.channel_id}`);
+
               if (event.channel_id === discordSdk?.channelId) {
                 updateVoiceState(event);
               } else {
+                // 自分のチャンネル以外（退室を含む）の場合は削除
+                log(`[VoiceEvent] Removing user ${username} from view`);
                 removeVoiceState(event.user.id);
               }
-              setTimeout(fetchChannelData, 500);
+              // サーバー側の状態反映を待つため2秒待機して再同期
+              setTimeout(fetchChannelData, 2000);
             };
 
             discordSdk.subscribe('VOICE_STATE_UPDATE', handleVoiceStateUpdate, { 
