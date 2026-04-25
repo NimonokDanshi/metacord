@@ -9,9 +9,10 @@ import { JapandiChair } from '@/components/models/chair/JapandiChair';
 import { Wall } from '@/components/models/wall/Wall';
 import { Floor } from '@/components/models/floor/Floor';
 import { PottedPlant } from '@/components/models/furniture/PottedPlant';
-import { RoomItem } from '@/constants/roomItems';
+import { RoomItem, ROOM_ITEMS } from '@/constants/roomItems';
 import { useRoomStore } from '@/stores/roomStore';
 import { useVoxelGrid } from '@/utils/voxelGrid';
+import { parseMySet } from '@/utils/userMetadataUtil';
 
 interface DynamicFurnitureProps {
   id?: string;
@@ -72,21 +73,47 @@ export function DynamicFurniture({
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
-      {item.modelComponent === 'Workstation' && (
+      {/* デスクセットの描画 */}
+      {item.type === 'desk' && (
         <group>
-           {/* 着席者がいればカスタムデスクを表示 */}
-           {occupantAtSeat ? (
-             <CustomWorkstation pos={{ x: 0, y: 0, z: 0 }} rotation={0} />
-           ) : (
-             <Workstation pos={{ x: 0, y: 0, z: 0 }} rotation={0} />
-           )}
+          {(() => {
+            // 着席者がいて、かつメタデータを持っている場合はそのMySetを優先
+            const myset = occupantAtSeat?.metadata ? parseMySet(occupantAtSeat.metadata) : null;
+            const deskId = myset?.desk || item.id;
+            const deskItem = ROOM_ITEMS.find(it => it.id === deskId) || item;
+
+            if (deskItem.modelComponent === 'JapandiWorkstation') {
+              return <JapandiWorkstation pos={{ x: 0, y: 0, z: 0 }} rotation={0} />;
+            }
+            
+            // 標準デスク（Workstation）の場合、着席時は豪華版（CustomWorkstation）を表示
+            if (occupantAtSeat) {
+              return <CustomWorkstation pos={{ x: 0, y: 0, z: 0 }} rotation={0} />;
+            }
+            
+            return <Workstation pos={{ x: 0, y: 0, z: 0 }} rotation={0} />;
+          })()}
         </group>
       )}
 
-      {item.modelComponent === 'JapandiWorkstation' && <JapandiWorkstation pos={{ x: 0, y: 0, z: 0 }} rotation={0} />}
-      {item.modelComponent === 'Chair' && <Chair pos={{ x: 0, y: 0, z: 0 }} rotation={0} />}
-      {item.modelComponent === 'JapandiChair' && <JapandiChair pos={{ x: 0, y: 0, z: 0 }} rotation={0} />}
-      {item.modelComponent === 'PottedPlant' && <PottedPlant />}
+      {/* 椅子の描画 (単体) */}
+      {item.type === 'chair' && (
+        <group>
+          {(() => {
+            const myset = occupantAtSeat?.metadata ? parseMySet(occupantAtSeat.metadata) : null;
+            const chairId = myset?.chair || item.id;
+            const chairItem = ROOM_ITEMS.find(it => it.id === chairId) || item;
+
+            if (chairItem.modelComponent === 'JapandiChair') {
+              return <JapandiChair pos={{ x: 0, y: 0, z: 0 }} rotation={0} />;
+            }
+            return <Chair pos={{ x: 0, y: 0, z: 0 }} rotation={0} />;
+          })()}
+        </group>
+      )}
+
+      {/* その他の家具 */}
+      {item.type === 'furniture' && item.modelComponent === 'PottedPlant' && <PottedPlant />}
       {item.modelComponent === 'Wall' && <Wall />}
       {item.modelComponent === 'Floor' && <Floor />}
       

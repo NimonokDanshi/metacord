@@ -25,7 +25,7 @@ export function WorldCanvas() {
   // Supabase/Presence の同期を開始
   useRoom();
   const { occupants, isEditing, setEditing, furnitures } = useRoomStore();
-  const { voiceStates, addLogMessage } = useDiscordStore();
+  const { user, avatarType, mySet, voiceStates, addLogMessage } = useDiscordStore();
   const [isAvatarModalOpen, setIsAvatarModalOpen] = React.useState(false);
   const [isMySetModalOpen, setIsMySetModalOpen] = React.useState(false);
 
@@ -40,8 +40,17 @@ export function WorldCanvas() {
 
     // 1. まずは Presence (アクティビティ起動中) のユーザーをそのまま反映
     occupants.forEach((occ) => {
+      const isMe = user && String(occ.user_id) === String(user.id);
       const vs = voiceStates.find((s) => String(s.user.id) === String(occ.user_id));
-      list.push({ occupant: occ, voiceState: vs });
+      
+      // 自分の場合は、ローカルの最新状態を優先して適用（リアルタイム反映のため）
+      const finalOccupant: SeatOccupant = isMe ? {
+        ...occ,
+        avatar_type: avatarType,
+        metadata: { myset: mySet }
+      } : occ;
+
+      list.push({ occupant: finalOccupant, voiceState: vs });
       
       processedUserIds.add(String(occ.user_id));
       occupiedSeats.add(occ.seat_index);
@@ -95,7 +104,7 @@ export function WorldCanvas() {
     });
     
     return list;
-  }, [occupants, voiceStates, furnitures]);
+  }, [occupants, voiceStates, furnitures, user, avatarType, mySet]);
 
   return (
     <div className="relative w-full h-full bg-[#1a1a2e]">

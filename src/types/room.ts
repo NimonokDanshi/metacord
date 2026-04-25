@@ -27,6 +27,8 @@ export interface PresencePayload {
   furniture_id?: string;
   /** アバターの種類 */
   avatar_type: AvatarType;
+  /** メタデータ (MySet情報など) */
+  metadata?: any;
   /** 入室日時 */
   joined_at: string;
 }
