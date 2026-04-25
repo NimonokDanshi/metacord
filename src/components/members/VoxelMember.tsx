@@ -17,9 +17,11 @@ export function VoxelMember({ occupant, voiceState }: Props) {
   // レジストリからモデルコンポーネントを取得
   const AvatarModel = getAvatarComponent(occupant.avatar_type);
 
+  const isSitting = !!occupant.furniture_id;
+  
   return (
     <BaseVoxelMember occupant={occupant} voiceState={voiceState}>
-      <AvatarModel isSitting={true} />
+      <AvatarModel isSitting={isSitting} />
     </BaseVoxelMember>
   );
 }

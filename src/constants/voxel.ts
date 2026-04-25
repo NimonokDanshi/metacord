@@ -38,7 +38,7 @@ export const HEIGHT_FLOOR = 0;
 export const HEIGHT_PLATFORM = 0.05;
 export const HEIGHT_DESK = 0.75; // デスクを少し高く
 export const HEIGHT_CHAIR_SEAT = 0.45;
-export const HEIGHT_MEMBER_STANDING = 0.6; // アバターの基準点（足元）
+export const HEIGHT_MEMBER_STANDING = 0; // アバターの基準点（足元）
 export const HEIGHT_MEMBER_SITTING = 0.45; // アバターの基準点（お尻）
 
 // 家具サイズ
