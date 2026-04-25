@@ -229,6 +229,22 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
               channel_id: discordSdk.channelId 
             });
 
+            // アプリ（アクティビティ）の参加者変更を検知
+            discordSdk.subscribe('ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE', (event) => {
+              log('同期ログ: アクティビティ参加者が更新されました', event);
+              fetchChannelData();
+            });
+
+            // 話し始めを検知
+            discordSdk.subscribe('SPEAKING_START', ({user_id}) => {
+              // ストア側のボイス状態を「話し中」に更新するロジックを将来的に追加可能
+              // 現状はログまたは簡易フラグ更新
+            }, { channel_id: discordSdk.channelId });
+
+            // 話し終わりを検知
+            discordSdk.subscribe('SPEAKING_STOP', ({user_id}) => {
+              // 話し中フラグを落とす
+            }, { channel_id: discordSdk.channelId });
           }
         } catch (authError: any) {
           log('Discord認証スキップ（ローカルブラウザ）:', authError.message);
