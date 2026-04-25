@@ -1,8 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Workstation, CustomWorkstation, Chair, Wall, Floor } from '@/components/office/OfficeFurniture';
-import { PottedPlant } from '@/components/office/OfficeEquipment';
+import { Workstation } from '@/components/models/desk/Workstation';
+import { CustomWorkstation } from '@/components/models/desk/CustomWorkstation';
+import { Chair } from '@/components/models/chair/Chair';
+import { Wall } from '@/components/models/wall/Wall';
+import { Floor } from '@/components/models/floor/Floor';
+import { PottedPlant } from '@/components/models/furniture/PottedPlant';
 import { RoomItem } from '@/constants/roomItems';
 import { useRoomStore } from '@/stores/roomStore';
 import { useVoxelGrid } from '@/utils/voxelGrid';

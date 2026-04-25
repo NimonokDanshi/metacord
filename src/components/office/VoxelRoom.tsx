@@ -1,6 +1,5 @@
 import React from 'react';
 import { GRID_SIZE_X, GRID_SIZE_Z, COLORS, VOXEL_SIZE } from '@/constants/voxel';
-import { PottedPlant } from './OfficeEquipment';
 
 function WallSegment({ pos, size }: { pos: [number, number, number]; size: [number, number, number] }) {
   return (
@@ -46,13 +45,6 @@ export function VoxelRoom() {
       <WallSegment pos={[-offset - 0.1, 1.5, 0]} size={[0.2, 3.0, GRID_SIZE_Z]} />
       <WallSegment pos={[0, 1.5, -offset - 0.1]} size={[GRID_SIZE_X, 3.0, 0.2]} />
 
-      {/* 観葉植物 (コーナーや隙間に配置) */}
-      <group position={[-offset + 0.8, 0, -offset + 0.8]}>
-        <PottedPlant />
-      </group>
-      <group position={[offset - 0.8, 0, -offset + 0.8]}>
-        <PottedPlant />
-      </group>
     </group>
   );
 }

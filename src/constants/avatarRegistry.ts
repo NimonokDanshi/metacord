@@ -1,6 +1,6 @@
-import { DefaultAvatarModel } from '@/components/members/models/DefaultAvatarModel';
-import { PenguinModel } from '@/components/members/models/PenguinModel';
-import { CatModel } from '@/components/members/models/CatModel';
+import { DefaultAvatarModel } from '@/components/models/avatars/DefaultAvatarModel';
+import { PenguinModel } from '@/components/models/avatars/PenguinModel';
+import { CatModel } from '@/components/models/avatars/CatModel';
 import { AvatarType } from '@/types/room';
 
 export interface AvatarMetadata {

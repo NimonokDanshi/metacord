@@ -10,7 +10,7 @@ interface Props {
 export function DefaultAvatarModel({
   color = COLORS.AVATAR_BLUE,
   skinColor = COLORS.AVATAR_SKIN,
-  isSitting = true
+  isSitting = false
 }: Props) {
   return (
     <group>
