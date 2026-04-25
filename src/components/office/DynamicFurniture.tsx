@@ -3,7 +3,9 @@
 import React from 'react';
 import { Workstation } from '@/components/models/desk/Workstation';
 import { CustomWorkstation } from '@/components/models/desk/CustomWorkstation';
+import { JapandiWorkstation } from '@/components/models/desk/JapandiWorkstation';
 import { Chair } from '@/components/models/chair/Chair';
+import { JapandiChair } from '@/components/models/chair/JapandiChair';
 import { Wall } from '@/components/models/wall/Wall';
 import { Floor } from '@/components/models/floor/Floor';
 import { PottedPlant } from '@/components/models/furniture/PottedPlant';
@@ -81,7 +83,9 @@ export function DynamicFurniture({
         </group>
       )}
 
+      {item.modelComponent === 'JapandiWorkstation' && <JapandiWorkstation pos={{ x: 0, y: 0, z: 0 }} rotation={0} />}
       {item.modelComponent === 'Chair' && <Chair pos={{ x: 0, y: 0, z: 0 }} rotation={0} />}
+      {item.modelComponent === 'JapandiChair' && <JapandiChair pos={{ x: 0, y: 0, z: 0 }} rotation={0} />}
       {item.modelComponent === 'PottedPlant' && <PottedPlant />}
       {item.modelComponent === 'Wall' && <Wall />}
       {item.modelComponent === 'Floor' && <Floor />}

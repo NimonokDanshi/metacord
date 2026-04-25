@@ -54,6 +54,21 @@ export const ROOM_ITEMS: RoomItem[] = [
     },
   },
   {
+    id: 'japandi-desk',
+    name: 'Japandi Set',
+    type: 'desk',
+    sizeX: 2,
+    sizeZ: 2,
+    isSeat: true,
+    modelComponent: 'JapandiWorkstation',
+    seatOffset: {
+      x: 0.5,
+      y: 0,
+      z: 1.15,
+      rotation: Math.PI,
+    },
+  },
+  {
     id: 'standard-chair',
     name: 'オフィスチェア',
     type: 'chair',
@@ -61,6 +76,21 @@ export const ROOM_ITEMS: RoomItem[] = [
     sizeZ: 1,
     isSeat: true,
     modelComponent: 'Chair',
+    seatOffset: {
+      x: 0,
+      y: 0,
+      z: 0,
+      rotation: 0,
+    },
+  },
+  {
+    id: 'japandi-chair',
+    name: 'Japandi Chair',
+    type: 'chair',
+    sizeX: 1,
+    sizeZ: 1,
+    isSeat: true,
+    modelComponent: 'JapandiChair',
     seatOffset: {
       x: 0,
       y: 0,

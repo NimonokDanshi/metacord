@@ -31,6 +31,10 @@ export const COLORS = {
   MOUSE: '#2d3436',
   CAT_GREY: '#95a5a6',
   CAT_PINK: '#ffafcc',
+  JAPANDI_WOOD: '#dcb993',    // 明るいオーク材
+  JAPANDI_BEIGE: '#f5f5dc',   // ベージュ（座面など）
+  JAPANDI_OFFWHITE: '#faf9f6', // オフホワイト
+  JAPANDI_LEG: '#4a4a4a',      // 細身の脚用のダークグレー
 };
 
 // Z-Index (3D では主に Y 軸方向の重なりとして処理)
