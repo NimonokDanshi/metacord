@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
-  const { groupRef, pos, isMuted, isDeaf, displayName, avatarUrl } = useAvatarLogic(occupant, voiceState);
+  const { groupRef, pos, isMuted, isDeaf, isSpeaking, displayName, avatarUrl } = useAvatarLogic(occupant, voiceState);
 
   if (!pos || isNaN(pos.x) || isNaN(pos.z)) {
     return null;
@@ -21,7 +21,7 @@ export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
     <group ref={groupRef} position={[pos.x, pos.y, pos.z]}>
       {/* アバターの外見（子要素として注入） */}
       {children}
-
+ 
       {/* 2.5D HUD: 名前カードとDiscordステータス */}
       <Html
         position={[0, 1.2, 0]}
@@ -33,7 +33,12 @@ export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
         <div className="flex flex-col items-center gap-1">
           {/* プロフィールアイコン */}
           <div className="relative">
-            <div className={`w-8 h-8 rounded-full border-2 ${isMuted ? 'border-red-500' : 'border-white'} overflow-hidden shadow-lg bg-[#2c3e50]`}>
+            {/* Speaking Ring (Rich Aesthetics) */}
+            {isSpeaking && (
+              <div className="absolute inset-0 -m-1 rounded-full border-2 border-green-400 animate-ping opacity-75" />
+            )}
+            
+            <div className={`w-8 h-8 rounded-full border-2 ${isSpeaking ? 'border-green-400 shadow-[0_0_10px_#4ade80]' : isMuted ? 'border-red-500' : 'border-white'} overflow-hidden shadow-lg bg-[#2c3e50] transition-colors`}>
               <img
                 src={avatarUrl || ''}
                 alt=""
@@ -53,7 +58,8 @@ export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
             )}
           </div>
           {/* 名前タグ */}
-          <div className="bg-black/80 text-white text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap shadow-md">
+          <div className={`flex items-center gap-1 ${isSpeaking ? 'bg-green-600/90' : 'bg-black/80'} text-white text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap shadow-md transition-colors`}>
+            {isSpeaking && <span className="animate-pulse">🔊</span>}
             {displayName}
           </div>
         </div>

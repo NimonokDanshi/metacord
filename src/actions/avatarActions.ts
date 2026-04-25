@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useVoxelGrid } from '@/utils/voxelGrid';
 import { useRoomStore } from '@/stores/roomStore';
+import { useDiscordStore } from '@/stores/discordStore';
 import { ROOM_ITEMS } from '@/constants/roomItems';
 import { HEIGHT_MEMBER_SITTING, HEIGHT_MEMBER_STANDING } from '@/constants/voxel';
 import type { SeatOccupant } from '@/types/room';
@@ -47,16 +48,31 @@ export function useAvatarLogic(occupant: SeatOccupant, voiceState?: VoiceState) 
   // ミュート・デフ状態の判定
   const isMuted = voiceState?.voice_state?.self_mute || voiceState?.mute;
   const isDeaf = voiceState?.voice_state?.self_deaf || voiceState?.voice_state?.deaf;
-  const isSpeaking = voiceState?.voice_state?.self_video || false;
-
+  
+  // Discord SDK からのリアルタイム発言状態を取得
+  const speakingUserIds = useDiscordStore(s => s.speakingUserIds);
+  const isSpeaking = speakingUserIds.has(occupant.user_id);
+ 
   // アニメーションと同期
   useFrame((state) => {
     if (groupRef.current && pos) {
       // 位置の更新
       groupRef.current.position.x = pos.x;
       groupRef.current.position.z = pos.z;
-      // わずかに上下に呼吸しているような動き
-      groupRef.current.position.y = pos.y + Math.sin(state.clock.elapsedTime * 1.5) * 0.02;
+ 
+      // 基本の呼吸モーション
+      let targetY = pos.y + Math.sin(state.clock.elapsedTime * 1.5) * 0.02;
+ 
+      // 喋っている時のジャンプモーション (Rich Aesthetics)
+      if (isSpeaking) {
+        targetY += Math.abs(Math.sin(state.clock.elapsedTime * 10)) * 0.15;
+        // 喋っている時は少し体を揺らす
+        groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 20) * 0.05;
+      } else {
+        groupRef.current.rotation.z = 0;
+      }
+ 
+      groupRef.current.position.y = targetY;
       
       // 向きの更新
       groupRef.current.rotation.y = pos.rotation;

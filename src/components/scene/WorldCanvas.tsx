@@ -20,8 +20,13 @@ import { AvatarSelector } from '../ui/AvatarSelector';
 import { FurnitureBottomBar } from '@/components/ui/FurnitureBottomBar';
 import { PlacementPreview } from '@/components/scene/PlacementPreview';
 import { MySetSelector } from '../ui/MySetSelector';
+import { useVoiceCommand } from '@/actions/voiceActions';
+import { VoiceStatusIndicator } from '../ui/VoiceStatusIndicator';
 
 export function WorldCanvas() {
+  // ボイスコマンドの有効化
+  useVoiceCommand();
+  
   // Supabase/Presence の同期を開始
   useRoom();
   const { occupants, isEditing, setEditing, furnitures } = useRoomStore();
@@ -158,6 +163,9 @@ export function WorldCanvas() {
 
       {/* Furniture Bottom Bar */}
       <FurnitureBottomBar />
+ 
+      {/* Voice Status Indicator */}
+      <VoiceStatusIndicator />
 
 
       <VoxelModal 

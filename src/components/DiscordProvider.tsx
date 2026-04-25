@@ -223,12 +223,9 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
               if (event.channel_id === discordSdk?.channelId) {
                 updateVoiceState(event);
               } else {
-                // 自分のチャンネル以外（退室を含む）の場合は削除
                 log(`[VoiceEvent] Removing user ${username} from view`);
                 removeVoiceState(event.user.id);
               }
-              // サーバー側の状態反映を待つため2秒待機して再同期
-              setTimeout(fetchChannelData, 2000);
             };
 
             discordSdk.subscribe('VOICE_STATE_UPDATE', handleVoiceStateUpdate, { 
@@ -243,13 +240,14 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
 
             // 話し始めを検知
             discordSdk.subscribe('SPEAKING_START', ({user_id}) => {
-              // ストア側のボイス状態を「話し中」に更新するロジックを将来的に追加可能
-              // 現状はログまたは簡易フラグ更新
+              log(`[SpeakingEvent] START: ${user_id}`);
+              useDiscordStore.getState().setSpeaking(user_id, true);
             }, { channel_id: discordSdk.channelId });
-
+ 
             // 話し終わりを検知
             discordSdk.subscribe('SPEAKING_STOP', ({user_id}) => {
-              // 話し中フラグを落とす
+              log(`[SpeakingEvent] STOP: ${user_id}`);
+              useDiscordStore.getState().setSpeaking(user_id, false);
             }, { channel_id: discordSdk.channelId });
           }
         } catch (authError: any) {

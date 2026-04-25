@@ -14,7 +14,7 @@ import { ROOM_ITEMS } from '@/constants/roomItems';
 
 const MAX_SEATS = GRID_SIZE_X * GRID_SIZE_Z;
 
-interface SeatInfo {
+export interface SeatInfo {
   seat_index: number;
   furniture_id?: string;
 }
@@ -22,7 +22,7 @@ interface SeatInfo {
 /**
  * 空いている座席（家具またはグリッド）を選択します。
  */
-function pickEmptySeat(
+export function pickEmptySeat(
   occupiedSeats: Set<number>, 
   occupiedFurnitureIds: Set<string>,
   furnitures: Furniture[]
