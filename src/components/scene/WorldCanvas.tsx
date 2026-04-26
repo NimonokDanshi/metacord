@@ -77,10 +77,18 @@ export function WorldCanvas() {
     const MAX_SEATS = GRID_SIZE_X * GRID_SIZE_Z;
 
     voiceOnlyUsers.forEach((vs) => {
+      const isMe = user && String(vs.user.id) === String(user.id);
+      
       let finalSeat = 0;
       let finalFurnitureId: string | undefined = undefined;
 
-      if (furnitureIdx < availableSeatFurnitures.length) {
+      // 自分の場合はストアの座席インデックスを優先
+      const { mySeatIndex: storeSeatIndex, myFurnitureId: storeFurnitureId } = useRoomStore.getState();
+      
+      if (isMe && storeSeatIndex !== null) {
+        finalSeat = storeSeatIndex;
+        finalFurnitureId = storeFurnitureId || undefined;
+      } else if (furnitureIdx < availableSeatFurnitures.length) {
         // 空いている椅子に座らせる
         const f = availableSeatFurnitures[furnitureIdx++];
         finalSeat = f.pos_z * GRID_SIZE_X + f.pos_x;
@@ -102,7 +110,8 @@ export function WorldCanvas() {
         avatar_url: getDiscordAvatarUrl(vs.user),
         seat_index: finalSeat,
         furniture_id: finalFurnitureId,
-        avatar_type: ((vs.user as any).mock_avatar_type as AvatarType) || 'default',
+        avatar_type: isMe ? avatarType : (((vs.user as any).mock_avatar_type as AvatarType) || 'default'),
+        metadata: isMe ? { myset: mySet } : undefined,
       };
       
       list.push({ occupant: syntheticOccupant, voiceState: vs });

@@ -120,9 +120,9 @@ export function useRoom() {
       const furnitureChannelName = `${roomKey}:furniture`;
       
       // 既存の同名チャンネルがあれば削除（再試行時などの衝突回避）
-      const existing = supabase.getChannels().find(c => c.topic === `realtime:${furnitureChannelName}`);
-      if (existing) {
-        await supabase.removeChannel(existing);
+      const existingFurniture = supabase.getChannels().find(c => c.topic === `realtime:${furnitureChannelName}`);
+      if (existingFurniture) {
+        await supabase.removeChannel(existingFurniture);
       }
 
       const furnitureChannel = supabase
@@ -140,6 +140,12 @@ export function useRoom() {
         .subscribe();
 
       // 3. Presence の購読開始
+      // 既存の同名 Presence チャンネルがあれば削除
+      const existingPresence = supabase.getChannels().find(c => c.topic === `realtime:${roomKey}`);
+      if (existingPresence) {
+        await supabase.removeChannel(existingPresence);
+      }
+      
       const status = await presenceService.subscribe(handlers);
       console.log(`[useRoom] Presence status: ${status}`);
 
@@ -227,7 +233,11 @@ export function useRoom() {
         joined_at: new Date().toISOString(),
       };
 
-      console.log('[useRoom] Presence 更新:', { seat: mySeatIndex, avatar: avatarType });
+      console.log('[useRoom] Presence 更新:', { 
+        seat: mySeatIndex, 
+        avatar: avatarType,
+        myset: mySet 
+      });
       await pService.track(presencePayload);
     };
 
