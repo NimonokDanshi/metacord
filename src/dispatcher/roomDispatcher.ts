@@ -118,6 +118,13 @@ export function useRoom() {
 
       // 2. 家具データの Postgres リアルタイム同期監視
       const furnitureChannelName = `${roomKey}:furniture`;
+      
+      // 既存の同名チャンネルがあれば削除（再試行時などの衝突回避）
+      const existing = supabase.getChannels().find(c => c.topic === `realtime:${furnitureChannelName}`);
+      if (existing) {
+        await supabase.removeChannel(existing);
+      }
+
       const furnitureChannel = supabase
         .channel(furnitureChannelName)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 't_server_furniture', filter: `server_id=eq.${roomId}` }, 
