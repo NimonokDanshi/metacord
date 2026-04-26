@@ -1,34 +1,17 @@
 import React from 'react';
 import { useDiscordStore } from '@/stores/discordStore';
 import { AvatarType } from '@/types/room';
-import { supabase } from '@/utils/supabase';
 import { AVATAR_REGISTRY } from '@/constants/avatarRegistry';
 import { AvatarPreview } from './AvatarPreview';
 import { SelectionGrid } from './SelectionGrid';
 import { SelectionCard } from './SelectionCard';
+import { roomActions } from '@/actions/roomActions';
 
 export function AvatarSelector() {
-  const { user, avatarType, setAvatarType, addLogMessage } = useDiscordStore();
+  const { avatarType } = useDiscordStore();
 
   const handleSelect = async (type: AvatarType) => {
-    if (!user) return;
-    
-    // UIを即座に更新 (Optimistic UI)
-    setAvatarType(type);
-    
-    // Supabase を更新
-    if (supabase) {
-      addLogMessage(`[AvatarSelector] Updating avatar to ${type}...`);
-      const { error } = await (supabase.from('m_users') as any)
-        .update({ avatar_id: type })
-        .eq('user_id', user.id);
-
-      if (error) {
-        addLogMessage(`[AvatarSelector] Error updating avatar: ${error.message}`);
-      } else {
-        addLogMessage(`[AvatarSelector] Avatar updated in DB: ${type}`);
-      }
-    }
+    await roomActions.updateAvatar(type);
   };
 
   // 表示用にグリッドを埋める (空きはLockedとして表示)

@@ -4,6 +4,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useDiscordStore } from '@/stores/discordStore';
 import { useRoomStore } from '@/stores/roomStore';
 import { pickEmptySeat } from '@/dispatcher/roomDispatcher';
+import { roomActions } from '@/actions/roomActions';
  
 export function useVoiceCommand() {
   const { user, setSpeaking } = useDiscordStore();
@@ -11,8 +12,6 @@ export function useVoiceCommand() {
     mySeatIndex, 
     furnitures, 
     getOccupiedSeats, 
-    setMySeatIndex, 
-    setMyFurnitureId 
   } = useRoomStore();
  
   const recognitionRef = useRef<any>(null);
@@ -33,13 +32,11 @@ export function useVoiceCommand() {
       });
  
       const seatInfo = pickEmptySeat(occupiedSeats, occupiedFurnitureIds, furnitures);
-      setMySeatIndex(seatInfo.seat_index);
-      setMyFurnitureId(seatInfo.furniture_id || null);
+      roomActions.changeSeat(seatInfo.seat_index, seatInfo.furniture_id || null);
     }
     
     // 他のコマンドもここに追加可能
-    // if (normalized.includes('ハート')) { ... }
-  }, [furnitures, getOccupiedSeats, setMySeatIndex, setMyFurnitureId]);
+  }, [furnitures, getOccupiedSeats]);
  
   const isListeningRef = useRef(false);
  

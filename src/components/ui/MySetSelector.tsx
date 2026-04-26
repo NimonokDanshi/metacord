@@ -1,51 +1,24 @@
 import React, { useState } from 'react';
 import { useDiscordStore } from '@/stores/discordStore';
-import { ROOM_ITEMS, ItemType } from '@/constants/roomItems';
+import { ROOM_ITEMS } from '@/constants/roomItems';
 import { FurniturePreview } from './FurniturePreview';
 import { SelectionGrid } from './SelectionGrid';
 import { SelectionCard } from './SelectionCard';
-import { supabase } from '@/utils/supabase';
-import { mergeMySet } from '@/utils/userMetadataUtil';
+import { roomActions } from '@/actions/roomActions';
 
 type MySetCategory = 'desk' | 'chair';
 
 export function MySetSelector() {
-  const { user, mySet, setMySet, addLogMessage } = useDiscordStore();
+  const { mySet } = useDiscordStore();
   const [activeCategory, setActiveCategory] = useState<MySetCategory>('desk');
 
   const handleSelect = async (category: MySetCategory, itemId: string) => {
-    if (!user) return;
-
     const newMySet = {
       ...mySet,
       [category]: itemId
     };
 
-    // UIを即座に更新 (Optimistic UI)
-    setMySet(newMySet);
-
-    // Supabase を更新
-    if (supabase) {
-      addLogMessage(`[MySetSelector] Updating ${category} to ${itemId}...`);
-      
-      // 現在のユーザー情報を取得してmetadataをマージ
-      const { data: userData } = await supabase.from('m_users')
-        .select('metadata')
-        .eq('user_id', user.id)
-        .single();
-
-      const updatedMetadata = mergeMySet(userData?.metadata || {}, newMySet);
-
-      const { error } = await (supabase.from('m_users') as any)
-        .update({ metadata: updatedMetadata })
-        .eq('user_id', user.id);
-
-      if (error) {
-        addLogMessage(`[MySetSelector] Error updating MySet: ${error.message}`);
-      } else {
-        addLogMessage(`[MySetSelector] MySet updated in DB: ${category}=${itemId}`);
-      }
-    }
+    await roomActions.updateMySet(newMySet);
   };
 
   const filteredItems = ROOM_ITEMS.filter(item => item.type === activeCategory);

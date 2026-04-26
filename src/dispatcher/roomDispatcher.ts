@@ -9,6 +9,7 @@ import { GRID_SIZE_X, GRID_SIZE_Z } from '@/constants/voxel';
 import { Furniture } from '@/types/furniture';
 import { ROOM_ITEMS } from '@/constants/roomItems';
 import { PresenceService } from '@/utils/presenceUtils';
+import { roomActions } from '@/actions/roomActions';
 
 const MAX_SEATS = GRID_SIZE_X * GRID_SIZE_Z;
 
@@ -65,8 +66,8 @@ export function useRoom() {
     setFurnitures,
     addFurniture,
     removeFurniture,
-    mySeatIndex,
     myFurnitureId,
+    setPresenceService,
   } = useRoomStore();
   
   const presenceServiceRef = useRef<PresenceService | null>(null);
@@ -78,6 +79,7 @@ export function useRoom() {
     const roomKey = channelId ? `room:${channelId}` : `room:${instanceId}`;
     const presenceService = new PresenceService(supabase, roomKey, user.id);
     presenceServiceRef.current = presenceService;
+    setPresenceService(presenceService);
 
     // --- Presence イベントハンドラの定義 (Dispatcher の役割) ---
     const handlers = {
@@ -168,6 +170,9 @@ export function useRoom() {
           setMySeatIndex(seatInfo.seat_index);
           setMyFurnitureId(seatInfo.furniture_id || null);
           setConnected(true);
+
+          // 初回 Presence トラッキングを実行
+          roomActions.syncPresence();
         }
       }
 
@@ -199,6 +204,7 @@ export function useRoom() {
       setConnected(false);
       setMySeatIndex(null);
       setMyFurnitureId(null);
+      setPresenceService(null);
       
       if (presenceServiceRef.current) {
         const pService = presenceServiceRef.current;
@@ -211,37 +217,5 @@ export function useRoom() {
       presenceServiceRef.current = null;
     };
   }, [user, instanceId, channelId]);
-
-  // 2. 自分の Presence 情報を更新 (接続済み && 座席確定後に実行)
-  useEffect(() => {
-    const pService = presenceServiceRef.current;
-    const isReady = useRoomStore.getState().isConnected && mySeatIndex !== null;
-    if (!pService || !user || !isReady) return;
-
-    const updatePresence = async () => {
-      const avatarUrl = getDiscordAvatarUrl(user);
-      const displayName = user.global_name ?? (user.discriminator !== '0' ? `${user.username}#${user.discriminator}` : user.username);
-
-      const presencePayload: PresencePayload = {
-        user_id: user.id,
-        display_name: displayName,
-        avatar_url: avatarUrl,
-        seat_index: mySeatIndex!,
-        furniture_id: myFurnitureId || undefined,
-        avatar_type: avatarType,
-        metadata: { myset: mySet },
-        joined_at: new Date().toISOString(),
-      };
-
-      console.log('[useRoom] Presence 更新:', { 
-        seat: mySeatIndex, 
-        avatar: avatarType,
-        myset: mySet 
-      });
-      await pService.track(presencePayload);
-    };
-
-    updatePresence();
-  }, [avatarType, mySet, user, mySeatIndex, myFurnitureId]);
 }
 

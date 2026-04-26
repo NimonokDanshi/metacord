@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { SeatOccupant } from '@/types/room';
 import { Furniture } from '@/types/furniture';
+import { PresenceService } from '@/utils/presenceUtils';
 
 interface RoomStore {
   /** 現在の在室者リスト（user_id → SeatOccupant） */
@@ -13,6 +14,8 @@ interface RoomStore {
 
   /** Supabase Realtimeチャンネルの接続状態 */
   isConnected: boolean;
+  /** Presence 同期用のサービスインスタンス */
+  presenceService: PresenceService | null;
 
   /** 在室者リストを全件更新する（Presence sync時に呼ぶ） */
   setOccupants: (occupants: Map<string, SeatOccupant>) => void;
@@ -30,6 +33,8 @@ interface RoomStore {
 
   /** 接続状態をセット */
   setConnected: (connected: boolean) => void;
+  /** Presence サービスをセット */
+  setPresenceService: (service: PresenceService | null) => void;
 
 
   /** 現在使用中のseat_indexの集合を返すゲッター */
@@ -80,6 +85,7 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   mySeatIndex: null,
   myFurnitureId: null,
   isConnected: false,
+  presenceService: null,
 
   // 編集モード初期値
   isEditing: false,
@@ -110,6 +116,7 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   setMySeatIndex: (index) => set({ mySeatIndex: index }),
   setMyFurnitureId: (id) => set({ myFurnitureId: id }),
   setConnected: (connected) => set({ isConnected: connected }),
+  setPresenceService: (service) => set({ presenceService: service }),
 
   getOccupiedSeats: () => {
     const seats = new Set<number>();
