@@ -2,6 +2,16 @@ import { create } from 'zustand';
 import { DiscordUser, VoiceState } from '@/types/discord';
 import { AvatarType } from '@/types/room';
 import { MySet, DEFAULT_MYSET } from '@/utils/userMetadataUtil';
+ 
+export type SyncEventType = 'DB_REQ' | 'DB_RES' | 'REALTIME' | 'PRESENCE' | 'ERROR';
+ 
+export interface SyncEvent {
+  id: string;
+  type: SyncEventType;
+  label: string;
+  payload?: any;
+  timestamp: number;
+}
 
 interface DiscordStore {
   user: DiscordUser | null;
@@ -26,6 +36,9 @@ interface DiscordStore {
   setRawChannelData: (data: any) => void;
   addLogMessage: (msg: string) => void;
   setSpeaking: (userId: string, isSpeaking: boolean) => void;
+  syncEvents: SyncEvent[];
+  addSyncEvent: (event: Omit<SyncEvent, 'id' | 'timestamp'>) => void;
+  clearSyncEvents: () => void;
 }
 
 export const useDiscordStore = create<DiscordStore>((set) => ({
@@ -73,4 +86,16 @@ export const useDiscordStore = create<DiscordStore>((set) => ({
     }
     return { speakingUserIds: next };
   }),
+  syncEvents: [],
+  addSyncEvent: (event) => set((state) => ({
+    syncEvents: [
+      {
+        ...event,
+        id: Math.random().toString(36).substring(2, 9),
+        timestamp: Date.now(),
+      },
+      ...state.syncEvents,
+    ].slice(0, 50),
+  })),
+  clearSyncEvents: () => set({ syncEvents: [] }),
 }));

@@ -176,6 +176,7 @@ export function OfficeFurniture() {
               rotation={f.rotation} 
               gridX={f.pos_x} 
               gridZ={f.pos_z} 
+              metadata={f.metadata}
             />
           </group>
         );

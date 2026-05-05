@@ -90,15 +90,28 @@ export function useRoom() {
           const payload = presenceList[0];
           next.set(userId, { ...payload });
         }
+        useDiscordStore.getState().addSyncEvent({ type: 'PRESENCE', label: 'onSync', payload: { count: next.size } });
         setOccupants(next);
       },
       onJoin: (payloads: PresencePayload[]) => {
         console.log('[useRoom] User Joined:', payloads);
+        useDiscordStore.getState().addSyncEvent({ type: 'PRESENCE', label: 'onJoin', payload: payloads });
         payloads.forEach(p => upsertOccupant({ ...p }));
       },
       onLeave: (payloads: PresencePayload[]) => {
         console.log('[useRoom] User Left:', payloads);
-        payloads.forEach(p => removeOccupant(p.user_id));
+        useDiscordStore.getState().addSyncEvent({ type: 'PRESENCE', label: 'onLeave', payload: payloads });
+        payloads.forEach(async (p) => {
+          removeOccupant(p.user_id);
+          
+          // 退室したユーザーが占有していた家具があればメタデータをクリア
+          if (supabase) {
+            await supabase
+              .from('t_server_furniture')
+              .update({ metadata: {} } as any)
+              .eq('metadata->>occupant_id', p.user_id);
+          }
+        });
       }
     };
 
@@ -130,11 +143,18 @@ export function useRoom() {
       const furnitureChannel = supabase
         .channel(furnitureChannelName)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 't_server_furniture', filter: `server_id=eq.${roomId}` }, 
-          (payload) => addFurniture(payload.new as Furniture))
+          (payload) => {
+            useDiscordStore.getState().addSyncEvent({ type: 'REALTIME', label: 'Furniture INSERT', payload: payload.new });
+            addFurniture(payload.new as Furniture);
+          })
         .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 't_server_furniture' }, 
-          (payload) => payload.old.id && removeFurniture(payload.old.id))
+          (payload) => {
+            useDiscordStore.getState().addSyncEvent({ type: 'REALTIME', label: 'Furniture DELETE', payload: payload.old });
+            payload.old.id && removeFurniture(payload.old.id);
+          })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 't_server_furniture' }, 
           (payload) => {
+            useDiscordStore.getState().addSyncEvent({ type: 'REALTIME', label: 'Furniture UPDATE', payload: payload.new });
             const { furnitures } = useRoomStore.getState();
             const next = furnitures.map(f => f.id === payload.new.id ? (payload.new as Furniture) : f);
             setFurnitures(next);
@@ -167,12 +187,10 @@ export function useRoom() {
           }
 
           const seatInfo = pickEmptySeat(occupiedSeats, occupiedFurnitureIds, currentFurnitures);
-          setMySeatIndex(seatInfo.seat_index);
-          setMyFurnitureId(seatInfo.furniture_id || null);
           setConnected(true);
 
-          // 初回 Presence トラッキングを実行
-          roomActions.syncPresence();
+          // 自分の座席を確定し、DB/Presence 両方に同期
+          roomActions.changeSeat(seatInfo.seat_index, seatInfo.furniture_id || null);
         }
       }
 

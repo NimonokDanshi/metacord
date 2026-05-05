@@ -22,6 +22,9 @@ export const roomActions = {
       roomId = 'local-dev-room';
     }
 
+    const { addSyncEvent } = useDiscordStore.getState();
+    addSyncEvent({ type: 'DB_REQ', label: 'saveFurniture', payload: { item_id, x, z } });
+
     const newFurniture: NewFurniture = {
       server_id: roomId,
       item_id,
@@ -45,6 +48,7 @@ export const roomActions = {
     } else if (data) {
       const msg = `[roomActions] saveFurniture success: ${data.id}`;
       console.log(msg);
+      addSyncEvent({ type: 'DB_RES', label: 'saveFurniture', payload: data });
       useDiscordStore.getState().addLogMessage(msg);
       addFurniture(data);
     }
@@ -57,7 +61,11 @@ export const roomActions = {
    */
   deleteFurniture: async (id: string) => {
     const { removeFurniture } = useRoomStore.getState();
+    const { addSyncEvent } = useDiscordStore.getState();
+
     if (!supabase) return { error: 'Supabase client not initialized' };
+
+    addSyncEvent({ type: 'DB_REQ', label: 'deleteFurniture', payload: { id } });
 
     const { error } = await supabase
       .from('t_server_furniture')
@@ -71,6 +79,7 @@ export const roomActions = {
     } else {
       const msg = `[roomActions] deleteFurniture success: ${id}`;
       console.log(msg);
+      addSyncEvent({ type: 'DB_RES', label: 'deleteFurniture', payload: { id } });
       useDiscordStore.getState().addLogMessage(msg);
       removeFurniture(id);
     }
@@ -82,7 +91,11 @@ export const roomActions = {
    */
   updateFurniture: async (id: string, x: number, z: number, rotation: number) => {
     const { furnitures, setFurnitures } = useRoomStore.getState();
+    const { addSyncEvent } = useDiscordStore.getState();
+
     if (!supabase) return { error: 'Supabase client not initialized' };
+
+    addSyncEvent({ type: 'DB_REQ', label: 'updateFurniture', payload: { id, x, z } });
 
     const { data, error } = await (supabase
       .from('t_server_furniture') as any)
@@ -102,6 +115,7 @@ export const roomActions = {
     } else if (data) {
       const msg = `[roomActions] updateFurniture success: ${data.id}`;
       console.log(msg);
+      addSyncEvent({ type: 'DB_RES', label: 'updateFurniture', payload: data });
       useDiscordStore.getState().addLogMessage(msg);
       // ストアを更新
       const next = furnitures.map(f => f.id === id ? (data as Furniture) : f);
@@ -142,6 +156,7 @@ export const roomActions = {
       myset: mySet
     });
 
+    useDiscordStore.getState().addSyncEvent({ type: 'PRESENCE', label: 'trackSelf', payload: presencePayload });
     await presenceService.track(presencePayload);
   },
 
@@ -149,9 +164,36 @@ export const roomActions = {
    * 座席を変更し、即座に同期します。
    */
   changeSeat: async (seatIndex: number, furnitureId: string | null = null) => {
-    const { setMySeatIndex, setMyFurnitureId } = useRoomStore.getState();
+    const { user, mySet } = useDiscordStore.getState();
+    const { myFurnitureId: oldFurnitureId, setMySeatIndex, setMyFurnitureId } = useRoomStore.getState();
+    
+    if (!user) return;
+
+    // 1. 自分の ID が紐付いている家具のメタデータを一旦すべてクリア (念のため)
+    if (supabase) {
+      await supabase
+        .from('t_server_furniture')
+        .update({ metadata: {} } as any)
+        .eq('metadata->>occupant_id', user.id);
+    }
+
+    // 2. ストアを更新
     setMySeatIndex(seatIndex);
     setMyFurnitureId(furnitureId);
+
+    // 3. 新しい家具にメタデータをセット (占有情報とMySet)
+    if (furnitureId && supabase) {
+      await supabase
+        .from('t_server_furniture')
+        .update({ 
+          metadata: { 
+            occupant_id: user.id,
+            myset: mySet
+          } 
+        } as any)
+        .eq('id', furnitureId);
+    }
+
     await roomActions.syncPresence();
   },
 
@@ -183,6 +225,7 @@ export const roomActions = {
    */
   updateMySet: async (newMySet: MySet) => {
     const { user, setMySet, addLogMessage } = useDiscordStore.getState();
+    const { myFurnitureId } = useRoomStore.getState();
     if (!user) return;
 
     setMySet(newMySet);
@@ -190,7 +233,7 @@ export const roomActions = {
     if (supabase) {
       addLogMessage(`[roomActions] Updating MySet in DB...`);
       
-      // 現在のユーザー情報を取得してmetadataをマージ
+      // 1. m_users の更新
       const { data: userData } = await supabase.from('m_users')
         .select('metadata')
         .eq('user_id', user.id)
@@ -198,12 +241,28 @@ export const roomActions = {
 
       const updatedMetadata = mergeMySet(userData?.metadata || {}, newMySet);
 
-      const { error } = await (supabase.from('m_users') as any)
+      const { error: userError } = await (supabase.from('m_users') as any)
         .update({ metadata: updatedMetadata })
         .eq('user_id', user.id);
 
-      if (error) {
-        addLogMessage(`[roomActions] Error updating MySet DB: ${error.message}`);
+      if (userError) {
+        addLogMessage(`[roomActions] Error updating MySet DB: ${userError.message}`);
+      }
+
+      // 2. 現在座っている家具があれば、そのメタデータも更新
+      if (myFurnitureId) {
+        const { error: furnError } = await (supabase.from('t_server_furniture') as any)
+          .update({ 
+            metadata: { 
+              occupant_id: user.id,
+              myset: newMySet
+            } 
+          })
+          .eq('id', myFurnitureId);
+        
+        if (furnError) {
+          addLogMessage(`[roomActions] Error updating furniture metadata: ${furnError.message}`);
+        }
       }
     }
 

@@ -22,6 +22,7 @@ interface DynamicFurnitureProps {
   rotation?: number;
   gridX?: number;
   gridZ?: number;
+  metadata?: any;
 }
 
 export function DynamicFurniture({ 
@@ -31,19 +32,19 @@ export function DynamicFurniture({
   colorOverride, 
   rotation = 0,
   gridX,
-  gridZ
+  gridZ,
+  metadata
 }: DynamicFurnitureProps) {
-  const { occupants, setEditing, setSelectedItem, setMovingFurnitureId, setPreviewRotation } = useRoomStore();
+  const { setEditing, setSelectedItem, setMovingFurnitureId, setPreviewRotation } = useRoomStore();
   const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
 
   // 透明度の適用
   const isPreview = opacity < 1;
 
-  // 着席判定 (家具IDに基づいて、誰かがこの家具に座っているか確認)
-  let occupantAtSeat = null;
-  if (!isPreview && id) {
-    occupantAtSeat = Array.from(occupants.values()).find(occ => occ.furniture_id === id);
-  }
+  // メタデータから着席ユーザー情報を取得
+  const occupantId = metadata?.occupant_id;
+  const occupantMySet = metadata?.myset ? parseMySet(metadata.myset) : null;
+  const isOccupied = !!occupantId;
 
   const handlePointerDown = (e: any) => {
     if (isPreview || !id) return;
@@ -78,8 +79,7 @@ export function DynamicFurniture({
         <group>
           {(() => {
             // 着席者がいて、かつメタデータを持っている場合はそのMySetを優先
-            const myset = occupantAtSeat?.metadata ? parseMySet(occupantAtSeat.metadata) : null;
-            const deskId = myset?.desk || item.id;
+            const deskId = occupantMySet?.desk || item.id;
             const deskItem = ROOM_ITEMS.find(it => it.id === deskId) || item;
 
             if (deskItem.modelComponent === 'JapandiWorkstation') {
@@ -87,7 +87,7 @@ export function DynamicFurniture({
             }
             
             // 標準デスク（Workstation）の場合、着席時は豪華版（CustomWorkstation）を表示
-            if (occupantAtSeat) {
+            if (isOccupied) {
               return <CustomWorkstation pos={{ x: 0, y: 0, z: 0 }} rotation={0} />;
             }
             
@@ -100,8 +100,7 @@ export function DynamicFurniture({
       {item.type === 'chair' && (
         <group>
           {(() => {
-            const myset = occupantAtSeat?.metadata ? parseMySet(occupantAtSeat.metadata) : null;
-            const chairId = myset?.chair || item.id;
+            const chairId = occupantMySet?.chair || item.id;
             const chairItem = ROOM_ITEMS.find(it => it.id === chairId) || item;
 
             if (chairItem.modelComponent === 'JapandiChair') {
