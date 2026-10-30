@@ -42,17 +42,17 @@ export function SelectionCard({
   const needsPurchase = !!(monetization?.isPremium && !isPurchased);
 
   // 枠線とシャドウのスタイル決定
-  let cardStyles = 'bg-black/30 border-white/10 hover:border-white/30';
+  let cardStyles = 'bg-slate-900/90 border-slate-700/60 hover:border-slate-500';
   if (isSelected) {
     if (rarityConfig) {
-      cardStyles = `bg-black/50 border-2 ${rarityConfig.glowShadow}`;
+      cardStyles = `bg-slate-900 border-2 ${rarityConfig.glowShadow}`;
     } else {
-      cardStyles = 'bg-[#4cc9f0]/10 border-[#4cc9f0] shadow-[4px_4px_0_0_#4cc9f0]';
+      cardStyles = 'bg-[#4cc9f0]/20 border-[#4cc9f0] shadow-[4px_4px_0_0_#4cc9f0]';
     }
   } else if (needsPurchase) {
-    cardStyles = 'bg-amber-950/20 border border-amber-500/40 hover:border-amber-400';
+    cardStyles = 'bg-slate-900/90 border border-amber-500/50 hover:border-amber-400';
   } else if (rarityConfig) {
-    cardStyles = `bg-black/30 border ${rarityConfig.borderColor} hover:border-opacity-100`;
+    cardStyles = `bg-slate-900/90 border ${rarityConfig.borderColor} hover:border-opacity-100`;
   }
 
   return (
@@ -64,8 +64,8 @@ export function SelectionCard({
         borderColor: rarityConfig.color,
       } : undefined}
     >
-      {/* Item Preview (3D or Icon) */}
-      <div className="relative aspect-square mb-3 flex items-center justify-center bg-black/40 border border-white/5 overflow-hidden">
+      {/* Item Preview (3D or Icon) - スポットライト風のラジアルグラデーション背景 */}
+      <div className="relative aspect-square mb-3 flex items-center justify-center bg-[radial-gradient(circle_at_center,_#3b485d_0%,_#1e293b_55%,_#090d16_100%)] border border-slate-700/50 shadow-inner overflow-hidden">
         {/* 課金 / プレミアムバッジ (左上) */}
         {monetization?.isPremium && !isLocked && (
           <div className="absolute top-1.5 left-1.5 z-20">
