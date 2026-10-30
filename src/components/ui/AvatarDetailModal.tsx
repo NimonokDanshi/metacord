@@ -17,73 +17,50 @@ interface Props {
 }
 
 /**
- * 舞台風の円形展示ステージ (ポディウム台座)
- */
-function ShowcasePodium({ neonColor = '#38bdf8' }: { neonColor?: string }) {
-  return (
-    <group position={[0, -0.02, 0]}>
-      {/* 台座本体 */}
-      <mesh receiveShadow position={[0, -0.03, 0]}>
-        <cylinderGeometry args={[0.55, 0.6, 0.06, 24]} />
-        <meshStandardMaterial color="#334155" roughness={0.4} metalness={0.6} />
-      </mesh>
-      {/* ステージ外周のネオンリング (光の輪) */}
-      <mesh position={[0, 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.5, 0.55, 24]} />
-        <meshStandardMaterial color={neonColor} emissive={neonColor} emissiveIntensity={1.6} />
-      </mesh>
-    </group>
-  );
-}
-
-/**
- * 3Dギミックビューポート (スポットライト＆リムライト付きミニステージ)
+ * 3Dギミックビューポート (余分なステージを撤廃し、アバターをドアップで大きく表示)
  */
 function GimmickViewport({
   component: ModelComponent,
   isSitting = false,
   isSpeaking = false,
   autoRotate = false,
-  zoom = 52,
-  neonColor = '#38bdf8',
+  zoom = 135,
 }: {
   component: React.ComponentType<any>;
   isSitting?: boolean;
   isSpeaking?: boolean;
   autoRotate?: boolean;
   zoom?: number;
-  neonColor?: string;
 }) {
   return (
     <div className="w-full h-full cursor-grab active:cursor-grabbing">
       <Canvas
         shadows
         orthographic
-        camera={{ position: [4.5, 3.8, 4.5], zoom }}
+        camera={{ position: [4.5, 3.5, 4.5], zoom }}
         gl={{ antialias: true, alpha: true }}
       >
-        {/* 全体を明るくする環境光 (黒つぶれ防止) */}
-        <ambientLight intensity={1.7} />
+        {/* 全体を明るくする環境光 */}
+        <ambientLight intensity={1.8} />
 
-        {/* 舞台の上からのメイントップライト */}
+        {/* メイントップライト */}
         <directionalLight
           position={[4, 8, 4]}
-          intensity={2.4}
+          intensity={2.2}
           castShadow
           shadow-mapSize={[512, 512]}
         />
 
-        {/* 背後からのリムライト (輪郭光) - 暗いアバターのシルエットを際立たせる */}
+        {/* 輪郭を際立たせるリムライト */}
         <directionalLight
           position={[-4, 5, -4]}
-          intensity={2.8}
+          intensity={2.6}
           color="#93c5fd"
         />
 
         <Suspense fallback={null}>
           <Center>
             <ModelComponent isSitting={isSitting} isSpeaking={isSpeaking} />
-            <ShowcasePodium neonColor={neonColor} />
           </Center>
           <OrbitControls
             enableZoom={false}
@@ -99,8 +76,7 @@ function GimmickViewport({
 
 /**
  * AvatarDetailModal
- * スポットライトが当たるステージ上で「立ち姿」「着席ポーズ」「発言ギミック」を
- * 3画面同時に明るく特大表示する詳細モーダル
+ * 「立ち姿」「着席ポーズ」「発言ギミック」をドアップかつ迫力あるサイズで3画面同時表示する詳細モーダル
  */
 export function AvatarDetailModal({
   avatar,
@@ -149,7 +125,7 @@ export function AvatarDetailModal({
           </button>
         </div>
 
-        {/* メイン: 3分割のスポットライト付き大判3Dギミック映像パネル */}
+        {/* メイン: 3分割の大迫力・近接3Dギミック映像パネル */}
         <div className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/75">
           
           {/* 仕切り 1: 立ち姿 (NORMAL) */}
@@ -160,14 +136,14 @@ export function AvatarDetailModal({
               </span>
               <span className="text-[9px] text-slate-400 font-bold">360° AUTO</span>
             </div>
-            {/* 3D映像 (特大ビューポート) */}
+            {/* 3D映像 (ドアップ拡大) */}
             <div className="h-60 md:h-72 relative">
               <GimmickViewport
                 component={ModelComponent}
                 isSitting={false}
                 isSpeaking={false}
                 autoRotate={true}
-                neonColor="#38bdf8"
+                zoom={135}
               />
             </div>
             <div className="p-2.5 bg-slate-900/90 border-t border-slate-700/60 text-center">
@@ -183,14 +159,14 @@ export function AvatarDetailModal({
               </span>
               <span className="text-[9px] text-blue-300/80 font-bold">SEATED</span>
             </div>
-            {/* 3D映像 */}
+            {/* 3D映像 (ドアップ拡大) */}
             <div className="h-60 md:h-72 relative">
               <GimmickViewport
                 component={ModelComponent}
                 isSitting={true}
                 isSpeaking={false}
                 autoRotate={false}
-                neonColor="#60a5fa"
+                zoom={135}
               />
             </div>
             <div className="p-2.5 bg-slate-900/90 border-t border-blue-500/30 text-center">
@@ -209,14 +185,14 @@ export function AvatarDetailModal({
                 LIVE 60FPS
               </span>
             </div>
-            {/* 3D映像 (リアルタイムにパタパタ・羽ばたき・発光！) */}
+            {/* 3D映像 (ドアップ拡大) */}
             <div className="h-60 md:h-72 relative">
               <GimmickViewport
                 component={ModelComponent}
                 isSitting={false}
                 isSpeaking={true}
                 autoRotate={false}
-                neonColor="#34d399"
+                zoom={135}
               />
             </div>
             <div className="p-2.5 bg-slate-900/90 border-t border-emerald-500/30 text-center">
