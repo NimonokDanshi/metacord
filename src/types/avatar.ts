@@ -1,8 +1,12 @@
 import React from 'react';
 
 /**
+ * アバターのレアリティ（ランク）
+ */
+export type AvatarRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'ultimate';
+
+/**
  * すべてのアバター3Dモデルが実装すべき共通インターフェース（Props）
- * 新しいアバターを作成する際はこのPropsを受け取るように実装します。
  */
 export interface AvatarModelProps {
   /** アバターのメインカラー */
@@ -25,6 +29,10 @@ export interface AvatarMetadata {
   name: string;
   /** 説明文 */
   description: string;
+  /** レアリティ（ランク） */
+  rarity: AvatarRarity;
   /** 描画する3Dコンポーネント (AvatarModelPropsを満たすもの) */
   component: React.ComponentType<AvatarModelProps>;
+  /** 入室時SEの識別子（オプション） */
+  soundEffect?: string;
 }
