@@ -10,7 +10,8 @@ interface Props {
 /**
  * AvatarPreview
  * モーダル内で個別の3Dアバターを表示するためのプレビューコンポーネント
- * Stageコンポーネントを使用して、サイズに関わらずモデルを自動調整して表示します。
+ * adjustCamera=1.45 により周囲に十分なセーフエリアを確保し、
+ * カード枠内のバッジや「？」ボタンとアバターの角や耳が被らないように設計。
  */
 export function AvatarPreview({ component: AvatarModel }: Props) {
   return (
@@ -18,14 +19,14 @@ export function AvatarPreview({ component: AvatarModel }: Props) {
       <Canvas
         shadows
         orthographic
-        camera={{ position: [5, 5, 5], zoom: 40 }}
+        camera={{ position: [5, 5, 5], zoom: 38 }}
         gl={{ antialias: true, alpha: true }}
       >
         <Suspense fallback={null}>
           <Stage
             intensity={1.0}
             environment={null}
-            adjustCamera={1.2} // 1.2倍の余裕を持ってフィットさせる
+            adjustCamera={1.45} // 十分な余白を確保してアイコン被りを防止
             shadows="contact"
           >
             <Center>

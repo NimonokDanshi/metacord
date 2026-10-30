@@ -24,7 +24,7 @@ function GimmickViewport({
   isSitting = false,
   isSpeaking = false,
   autoRotate = false,
-  zoom = 42,
+  zoom = 36,
 }: {
   component: React.ComponentType<any>;
   isSitting?: boolean;
@@ -44,7 +44,7 @@ function GimmickViewport({
           <Stage
             intensity={1.0}
             environment={null}
-            adjustCamera={1.2}
+            adjustCamera={1.38} // 上下のUIとの被りを防ぐセーフエリア
             shadows="contact"
           >
             <Center>

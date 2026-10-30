@@ -17,6 +17,13 @@ export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
     return null;
   }
 
+  const isSitting = !!occupant.furniture_id;
+  // 角や耳が高いアバター (Dragon, Bunny) は頭上マージンを大きく確保
+  const isTallAvatar = occupant.avatar_type === 'mecha-dragon' || occupant.avatar_type === 'cyber-bunny';
+  const hudY = isSitting 
+    ? (isTallAvatar ? 1.3 : 1.15) 
+    : (isTallAvatar ? 1.5 : 1.35);
+
   return (
     <group ref={groupRef} position={[pos.x, pos.y, pos.z]}>
       {/* アバターの外見（子要素として注入し、ボイス発言状態を透過的に伝播） */}
@@ -24,23 +31,26 @@ export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
         ? React.cloneElement(children as React.ReactElement<any>, { isSpeaking })
         : children}
  
-      {/* 2.5D HUD: 名前カードとDiscordステータス */}
+      {/* 2.5D HUD: カメラのズームイン・ズームアウトに連動してアバターと同じ比率で拡縮する transform / sprite 設定 */}
       <Html
-        position={[0, 1.2, 0]}
+        position={[0, hudY, 0]}
         center
+        transform
+        sprite
+        scale={0.28}
         occlude={false}
         className="pointer-events-none select-none"
         zIndexRange={[100, 0]}
       >
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-1.5 transform-gpu">
           {/* プロフィールアイコン */}
           <div className="relative">
-            {/* Speaking Ring (Rich Aesthetics) */}
+            {/* Speaking Ring */}
             {isSpeaking && (
-              <div className="absolute inset-0 -m-1 rounded-full border-2 border-green-400 animate-ping opacity-75" />
+              <div className="absolute inset-0 -m-1.5 rounded-full border-2 border-green-400 animate-ping opacity-75" />
             )}
             
-            <div className={`w-8 h-8 rounded-full border-2 ${isSpeaking ? 'border-green-400 shadow-[0_0_10px_#4ade80]' : isMuted ? 'border-red-500' : 'border-white'} overflow-hidden shadow-lg bg-[#2c3e50] transition-colors`}>
+            <div className={`w-9 h-9 rounded-full border-2 ${isSpeaking ? 'border-green-400 shadow-[0_0_12px_#4ade80]' : isMuted ? 'border-red-500' : 'border-white'} overflow-hidden shadow-lg bg-[#2c3e50] transition-colors`}>
               <img
                 src={avatarUrl || ''}
                 alt=""
@@ -51,16 +61,16 @@ export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
             {(isMuted || isDeaf) && (
               <div className="absolute -bottom-1 -right-1 flex gap-0.5">
                 {isMuted && (
-                  <div className="bg-red-600 text-[8px] p-0.5 rounded-full shadow-md border border-white/20">🔇</div>
+                  <div className="bg-red-600 text-[9px] p-0.5 rounded-full shadow-md border border-white/20">🔇</div>
                 )}
                 {isDeaf && (
-                  <div className="bg-slate-700 text-[8px] p-0.5 rounded-full shadow-md border border-white/20">🎧</div>
+                  <div className="bg-slate-700 text-[9px] p-0.5 rounded-full shadow-md border border-white/20">🎧</div>
                 )}
               </div>
             )}
           </div>
           {/* 名前タグ */}
-          <div className={`flex items-center gap-1 ${isSpeaking ? 'bg-green-600/90' : 'bg-black/80'} text-white text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap shadow-md transition-colors`}>
+          <div className={`flex items-center gap-1.5 ${isSpeaking ? 'bg-green-600/90' : 'bg-black/85'} text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-md transition-colors border border-white/10`}>
             {isSpeaking && <span className="animate-pulse">🔊</span>}
             {displayName}
           </div>
