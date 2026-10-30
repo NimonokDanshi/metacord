@@ -3,6 +3,7 @@ import { PenguinModel } from '@/components/models/avatars/PenguinModel';
 import { CatModel } from '@/components/models/avatars/CatModel';
 import { CyberBunnyModel } from '@/components/models/avatars/CyberBunnyModel';
 import { ShibaDogModel } from '@/components/models/avatars/ShibaDogModel';
+import { MechaDragonModel } from '@/components/models/avatars/MechaDragonModel';
 import { AvatarMetadata, AvatarModelProps, AvatarRarity } from '@/types/avatar';
 import { AvatarType } from '@/types/room';
 
@@ -54,6 +55,19 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
       isPremium: true,
       skuId: 'sku_cyber_bunny',
       priceLabel: '$1.99',
+      requiredTier: 'pro'
+    }
+  },
+  {
+    id: 'mecha-dragon',
+    name: 'Mecha Dragon',
+    description: 'Armored metallic dragon with radiant golden energy horns and wings.',
+    rarity: 'legendary',
+    component: MechaDragonModel,
+    monetization: {
+      isPremium: true,
+      skuId: 'sku_mecha_dragon',
+      priceLabel: '$2.99',
       requiredTier: 'pro'
     }
   }
