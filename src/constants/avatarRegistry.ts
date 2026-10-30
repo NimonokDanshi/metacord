@@ -4,6 +4,8 @@ import { CatModel } from '@/components/models/avatars/CatModel';
 import { CyberBunnyModel } from '@/components/models/avatars/CyberBunnyModel';
 import { ShibaDogModel } from '@/components/models/avatars/ShibaDogModel';
 import { MechaDragonModel } from '@/components/models/avatars/MechaDragonModel';
+import { ChubbyChickModel } from '@/components/models/avatars/ChubbyChickModel';
+import { BaristaBearModel } from '@/components/models/avatars/BaristaBearModel';
 import { AvatarMetadata, AvatarModelProps, AvatarRarity } from '@/types/avatar';
 import { AvatarType } from '@/types/room';
 
@@ -23,6 +25,20 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
     description: 'The classic blue voxel bot.',
     rarity: 'common',
     component: DefaultAvatarModel
+  },
+  {
+    id: 'chubby-chick',
+    name: 'Chubby Chick',
+    description: 'A round yellow chick with tiny flapping wings.',
+    rarity: 'common',
+    component: ChubbyChickModel
+  },
+  {
+    id: 'barista-bear',
+    name: 'Barista Bear',
+    description: 'A calm brown bear wearing a cozy cafe apron.',
+    rarity: 'common',
+    component: BaristaBearModel
   },
   {
     id: 'shiba-dog',
