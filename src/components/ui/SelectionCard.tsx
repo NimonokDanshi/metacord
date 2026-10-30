@@ -1,6 +1,6 @@
 import React from 'react';
 import { VoxelButton } from './VoxelButton';
-import { AvatarRarity } from '@/types/avatar';
+import { AvatarRarity, AvatarMonetization } from '@/types/avatar';
 import { RARITY_CONFIG } from '@/constants/rarity';
 import { VoxelRarityBadge } from './VoxelRarityBadge';
 
@@ -9,6 +9,7 @@ interface Props {
   description?: string;
   preview: React.ReactNode;
   rarity?: AvatarRarity;
+  monetization?: AvatarMonetization;
   isSelected?: boolean;
   isLocked?: boolean;
   onClick: () => void;
@@ -16,13 +17,14 @@ interface Props {
 }
 
 /**
- * アイテム選択画面用の汎用カードコンポーネント (レアリティ対応)
+ * アイテム選択画面用の汎用カードコンポーネント (レアリティ & 課金拡張対応)
  */
 export function SelectionCard({
   name,
   description,
   preview,
   rarity,
+  monetization,
   isSelected,
   isLocked,
   onClick,
@@ -53,6 +55,15 @@ export function SelectionCard({
     >
       {/* Item Preview (3D or Icon) */}
       <div className="relative aspect-square mb-3 flex items-center justify-center bg-black/40 border border-white/5 overflow-hidden">
+        {/* 課金 / プレミアムバッジ (左上) */}
+        {monetization?.isPremium && !isLocked && (
+          <div className="absolute top-1.5 left-1.5 z-20">
+            <span className="inline-flex items-center px-1.5 py-0.5 text-[8px] font-black tracking-wider bg-gradient-to-r from-amber-500 to-yellow-300 text-black border border-amber-200 shadow-sm">
+              💎 {monetization.priceLabel || 'PREMIUM'}
+            </span>
+          </div>
+        )}
+
         {/* レアリティバッジ (右上) */}
         {rarity && !isLocked && (
           <div className="absolute top-1.5 right-1.5 z-20">

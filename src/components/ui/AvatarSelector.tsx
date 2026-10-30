@@ -44,6 +44,7 @@ export function AvatarSelector() {
             name={avatar.name}
             description={avatar.description}
             rarity={avatar.rarity}
+            monetization={avatar.monetization}
             preview={!isLocked ? <AvatarPreview component={avatar.component} /> : null}
             isSelected={isSelected}
             isLocked={isLocked}

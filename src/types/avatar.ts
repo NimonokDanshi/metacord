@@ -6,13 +6,29 @@ import React from 'react';
 export type AvatarRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'ultimate';
 
 /**
+ * 課金・アンロック情報の型定義 (Discord Premium Apps 連動用)
+ */
+export interface AvatarMonetization {
+  /** 課金/プレミアム会員限定か */
+  isPremium?: boolean;
+  /** Discord Developer Portal の SKU ID */
+  skuId?: string;
+  /** 表示用の価格/ステータスラベル（例: "PRO", "$2.99"） */
+  priceLabel?: string;
+  /** 必要なサブスクリプション区分 */
+  requiredTier?: 'free' | 'supporter' | 'pro' | 'guild_owner';
+}
+
+/**
  * すべてのアバター3Dモデルが実装すべき共通インターフェース（Props）
  */
 export interface AvatarModelProps {
   /** アバターのメインカラー */
   color?: string;
-  /** 肌の色 (対応モデルのみ) */
+  /** 肌の色 / サブカラー (対応モデルのみ) */
   skinColor?: string;
+  /** アクセントカラー (ネオン色など) */
+  accentColor?: string;
   /** 着席中フラグ (座りポーズや位置オフセットに使用) */
   isSitting?: boolean;
   /** 発言中フラグ (ボイス連動アニメーション等に使用) */
@@ -35,4 +51,6 @@ export interface AvatarMetadata {
   component: React.ComponentType<AvatarModelProps>;
   /** 入室時SEの識別子（オプション） */
   soundEffect?: string;
+  /** 課金・アンロック情報（オプション） */
+  monetization?: AvatarMonetization;
 }

@@ -19,8 +19,10 @@ export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
 
   return (
     <group ref={groupRef} position={[pos.x, pos.y, pos.z]}>
-      {/* アバターの外見（子要素として注入） */}
-      {children}
+      {/* アバターの外見（子要素として注入し、ボイス発言状態を透過的に伝播） */}
+      {React.isValidElement(children)
+        ? React.cloneElement(children as React.ReactElement<any>, { isSpeaking })
+        : children}
  
       {/* 2.5D HUD: 名前カードとDiscordステータス */}
       <Html
