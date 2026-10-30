@@ -2,6 +2,7 @@ import { DefaultAvatarModel } from '@/components/models/avatars/DefaultAvatarMod
 import { PenguinModel } from '@/components/models/avatars/PenguinModel';
 import { CatModel } from '@/components/models/avatars/CatModel';
 import { CyberBunnyModel } from '@/components/models/avatars/CyberBunnyModel';
+import { ShibaDogModel } from '@/components/models/avatars/ShibaDogModel';
 import { AvatarMetadata, AvatarModelProps, AvatarRarity } from '@/types/avatar';
 import { AvatarType } from '@/types/room';
 
@@ -21,6 +22,13 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
     description: 'The classic blue voxel bot.',
     rarity: 'common',
     component: DefaultAvatarModel
+  },
+  {
+    id: 'shiba-dog',
+    name: 'Shiba Dog',
+    description: 'A cheerful Japanese Shiba Inu with a curled tail.',
+    rarity: 'rare',
+    component: ShibaDogModel
   },
   {
     id: 'penguin',
