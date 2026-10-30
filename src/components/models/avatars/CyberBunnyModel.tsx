@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 import { AvatarModelProps } from '@/types/avatar';
 
 /**
  * CyberBunnyModel (Epic)
  * サイバーゴーグルとネオンイヤーを装備した近未来のウサギアバター
- * 喋っている間 (isSpeaking = true)、ゴーグルとネオンイヤーの発光強度が増加します。
+ * - 喋っている間 (isSpeaking = true) はゴーグルとネオンが高速明滅し、耳がピコピコ動きます
  */
 export function CyberBunnyModel({
   color = '#1e1b4b',          // ダークインディゴのサイバージャケット
@@ -13,9 +15,30 @@ export function CyberBunnyModel({
   isSitting = false,
   isSpeaking = false,
 }: AvatarModelProps) {
-  // 発光設定: 喋っている時は光を強調
-  const neonIntensity = isSpeaking ? 2.5 : 1.2;
+  const rightEarRef = useRef<THREE.Group>(null);
+  const leftEarRef = useRef<THREE.Group>(null);
+  const visorMatRef = useRef<THREE.MeshStandardMaterial>(null);
+
   const earNeon = '#f43f5e'; // ネオンピンク
+
+  // 毎フレームのアニメーション処理 (60fps)
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    if (isSpeaking) {
+      // 耳のピコピコ動くアニメーション
+      const earWiggle = Math.sin(t * 16) * 0.2;
+      if (rightEarRef.current) rightEarRef.current.rotation.x = -0.15 + earWiggle;
+      if (leftEarRef.current) leftEarRef.current.rotation.x = -0.15 + earWiggle;
+
+      // ゴーグルのサイバーパルス明滅
+      const pulse = (Math.sin(t * 18) * 0.5 + 0.5) * 2.2 + 1.2;
+      if (visorMatRef.current) visorMatRef.current.emissiveIntensity = pulse;
+    } else {
+      if (rightEarRef.current) rightEarRef.current.rotation.x = -0.15;
+      if (leftEarRef.current) leftEarRef.current.rotation.x = -0.15;
+      if (visorMatRef.current) visorMatRef.current.emissiveIntensity = 1.2;
+    }
+  });
 
   return (
     <group>
@@ -31,7 +54,7 @@ export function CyberBunnyModel({
         <meshStandardMaterial
           color={accentColor}
           emissive={accentColor}
-          emissiveIntensity={neonIntensity}
+          emissiveIntensity={isSpeaking ? 2.5 : 1.2}
         />
       </mesh>
 
@@ -47,9 +70,10 @@ export function CyberBunnyModel({
         <mesh castShadow>
           <boxGeometry args={[0.34, 0.12, 0.04]} />
           <meshStandardMaterial
+            ref={visorMatRef}
             color={accentColor}
             emissive={accentColor}
-            emissiveIntensity={neonIntensity}
+            emissiveIntensity={1.2}
             roughness={0.1}
             metalness={0.9}
           />
@@ -60,68 +84,61 @@ export function CyberBunnyModel({
           <meshStandardMaterial
             color={earNeon}
             emissive={earNeon}
-            emissiveIntensity={neonIntensity * 1.5}
+            emissiveIntensity={isSpeaking ? 2.8 : 1.4}
           />
         </mesh>
       </group>
 
       {/* ヘッドセット (Headset & Ear Cups) */}
       <group position={[0, 0.62, 0]}>
-        {/* ヘッドバンド */}
         <mesh position={[0, 0.16, 0]}>
           <boxGeometry args={[0.36, 0.04, 0.06]} />
           <meshStandardMaterial color="#0f172a" metalness={0.8} />
         </mesh>
-        {/* 右イヤーカップ */}
         <mesh position={[0.18, 0.02, 0]}>
           <boxGeometry args={[0.04, 0.12, 0.12]} />
           <meshStandardMaterial color="#0f172a" />
         </mesh>
-        {/* 左イヤーカップ */}
         <mesh position={[-0.18, 0.02, 0]}>
           <boxGeometry args={[0.04, 0.12, 0.12]} />
           <meshStandardMaterial color="#0f172a" />
         </mesh>
       </group>
 
-      {/* ウサギの長い耳 (Bunny Ears with Neon Core) */}
+      {/* ウサギの長い耳 (Bunny Ears - useFrameでピコピコ動く) */}
       {/* 右耳 */}
-      <group position={[0.1, 0.88, -0.02]} rotation={[-0.15, 0, 0.08]}>
-        {/* 耳の外枠 */}
+      <group ref={rightEarRef} position={[0.1, 0.88, -0.02]} rotation={[-0.15, 0, 0.08]}>
         <mesh castShadow>
           <boxGeometry args={[0.1, 0.32, 0.08]} />
           <meshStandardMaterial color={skinColor} />
         </mesh>
-        {/* 耳の内側ネオン (ピンク) */}
         <mesh position={[0, 0, 0.041]}>
           <boxGeometry args={[0.05, 0.24, 0.01]} />
           <meshStandardMaterial
             color={earNeon}
             emissive={earNeon}
-            emissiveIntensity={neonIntensity}
+            emissiveIntensity={isSpeaking ? 2.5 : 1.2}
           />
         </mesh>
       </group>
 
       {/* 左耳 */}
-      <group position={[-0.1, 0.88, -0.02]} rotation={[-0.15, 0, -0.08]}>
-        {/* 耳の外枠 */}
+      <group ref={leftEarRef} position={[-0.1, 0.88, -0.02]} rotation={[-0.15, 0, -0.08]}>
         <mesh castShadow>
           <boxGeometry args={[0.1, 0.32, 0.08]} />
           <meshStandardMaterial color={skinColor} />
         </mesh>
-        {/* 耳の内側ネオン (ピンク) */}
         <mesh position={[0, 0, 0.041]}>
           <boxGeometry args={[0.05, 0.24, 0.01]} />
           <meshStandardMaterial
             color={earNeon}
             emissive={earNeon}
-            emissiveIntensity={neonIntensity}
+            emissiveIntensity={isSpeaking ? 2.5 : 1.2}
           />
         </mesh>
       </group>
 
-      {/* 丸いウサギのしっぽ (Fluffy Tail) */}
+      {/* 丸いウサギのしっぽ */}
       <mesh castShadow position={[0, 0.1, -0.16]}>
         <boxGeometry args={[0.1, 0.1, 0.08]} />
         <meshStandardMaterial color={skinColor} />
@@ -140,7 +157,6 @@ export function CyberBunnyModel({
       {/* 脚 (Legs) - 着席・直立ポーズ切り替え */}
       {isSitting ? (
         <group name="Legs_Sitting" position={[0, 0.05, 0.12]}>
-          {/* 着席時: 脚を前方に伸ばす */}
           <mesh name="Leg_R" castShadow position={[0.09, 0, 0.12]}>
             <boxGeometry args={[0.1, 0.1, 0.3]} />
             <meshStandardMaterial color="#0f172a" />
@@ -149,13 +165,12 @@ export function CyberBunnyModel({
             <boxGeometry args={[0.1, 0.1, 0.3]} />
             <meshStandardMaterial color="#0f172a" />
           </mesh>
-          {/* スニーカーのネオンソール */}
           <mesh position={[0.09, -0.04, 0.16]}>
             <boxGeometry args={[0.1, 0.02, 0.2]} />
             <meshStandardMaterial
               color={accentColor}
               emissive={accentColor}
-              emissiveIntensity={neonIntensity}
+              emissiveIntensity={1.5}
             />
           </mesh>
           <mesh position={[-0.09, -0.04, 0.16]}>
@@ -163,13 +178,12 @@ export function CyberBunnyModel({
             <meshStandardMaterial
               color={accentColor}
               emissive={accentColor}
-              emissiveIntensity={neonIntensity}
+              emissiveIntensity={1.5}
             />
           </mesh>
         </group>
       ) : (
         <group name="Legs_Standing" position={[0, 0.02, 0]}>
-          {/* 直立時 */}
           <mesh name="Leg_R" castShadow position={[0.1, -0.12, 0]}>
             <boxGeometry args={[0.1, 0.28, 0.12]} />
             <meshStandardMaterial color="#0f172a" />
@@ -178,13 +192,12 @@ export function CyberBunnyModel({
             <boxGeometry args={[0.1, 0.28, 0.12]} />
             <meshStandardMaterial color="#0f172a" />
           </mesh>
-          {/* スニーカーのネオンソール */}
           <mesh position={[0.1, -0.24, 0.02]}>
             <boxGeometry args={[0.1, 0.04, 0.16]} />
             <meshStandardMaterial
               color={accentColor}
               emissive={accentColor}
-              emissiveIntensity={neonIntensity}
+              emissiveIntensity={1.5}
             />
           </mesh>
           <mesh position={[-0.1, -0.24, 0.02]}>
@@ -192,7 +205,7 @@ export function CyberBunnyModel({
             <meshStandardMaterial
               color={accentColor}
               emissive={accentColor}
-              emissiveIntensity={neonIntensity}
+              emissiveIntensity={1.5}
             />
           </mesh>
         </group>

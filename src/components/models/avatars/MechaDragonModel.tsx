@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 import { AvatarModelProps } from '@/types/avatar';
 
 /**
  * MechaDragonModel (Legendary)
  * 重厚なメタリック装甲とエナジーホーンを備えたメカニカルなボクセルドランゴン
- * - 胸部にエナジーコア（リアクター）、背中にメカウィング、先端ブレード付きのメカテイル
+ * - 喋っている間 (isSpeaking = true) はメカ翼が大きくダイナミックに羽ばたき、エナジーホーンとコアが激しく明滅します
  * - 着席時 (isSitting = true) は脚を折り曲げて着席
- * - 喋っている間 (isSpeaking = true) はエナジーホーンとコアが強く発光し、翼が羽ばたきます
  */
 export function MechaDragonModel({
   color = '#1e293b',          // ダークスレート/ガンメタルの装甲
@@ -15,10 +16,33 @@ export function MechaDragonModel({
   isSitting = false,
   isSpeaking = false,
 }: AvatarModelProps) {
-  // 発言時のエナジーブースト
-  const neonIntensity = isSpeaking ? 3.0 : 1.4;
-  const cyanEnergy = '#06b6d4'; // コア・アイ用ネオンシアン
-  const wingAngle = isSpeaking ? 0.35 : 0.15; // 喋ると翼が大きく展開
+  const rightWingRef = useRef<THREE.Group>(null);
+  const leftWingRef = useRef<THREE.Group>(null);
+  const coreMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const hornMatRef = useRef<THREE.MeshStandardMaterial>(null);
+
+  const cyanEnergy = '#06b6d4';
+
+  // 毎フレームのアニメーション処理 (60fps)
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    if (isSpeaking) {
+      // 翼のダイナミックな羽ばたき (8Hz)
+      const flap = Math.sin(t * 8) * 0.35 + 0.2;
+      if (rightWingRef.current) rightWingRef.current.rotation.y = flap;
+      if (leftWingRef.current) leftWingRef.current.rotation.y = -flap;
+
+      // ネオンエナジーのパルス明滅
+      const pulse = (Math.sin(t * 12) * 0.5 + 0.5) * 2.0 + 1.5;
+      if (coreMatRef.current) coreMatRef.current.emissiveIntensity = pulse;
+      if (hornMatRef.current) hornMatRef.current.emissiveIntensity = pulse * 0.9;
+    } else {
+      if (rightWingRef.current) rightWingRef.current.rotation.y = 0.15;
+      if (leftWingRef.current) leftWingRef.current.rotation.y = -0.15;
+      if (coreMatRef.current) coreMatRef.current.emissiveIntensity = 1.2;
+      if (hornMatRef.current) hornMatRef.current.emissiveIntensity = 1.0;
+    }
+  });
 
   return (
     <group>
@@ -32,9 +56,10 @@ export function MechaDragonModel({
       <mesh position={[0, 0.32, 0.165]}>
         <boxGeometry args={[0.12, 0.14, 0.02]} />
         <meshStandardMaterial
+          ref={coreMatRef}
           color={cyanEnergy}
           emissive={cyanEnergy}
-          emissiveIntensity={neonIntensity}
+          emissiveIntensity={1.4}
         />
       </mesh>
       {/* コアフレーム (Gold Border) */}
@@ -82,7 +107,7 @@ export function MechaDragonModel({
           <meshStandardMaterial
             color={cyanEnergy}
             emissive={cyanEnergy}
-            emissiveIntensity={neonIntensity}
+            emissiveIntensity={1.5}
           />
         </mesh>
         <mesh position={[-0.09, 0.02, 0.18]}>
@@ -90,7 +115,7 @@ export function MechaDragonModel({
           <meshStandardMaterial
             color={cyanEnergy}
             emissive={cyanEnergy}
-            emissiveIntensity={neonIntensity}
+            emissiveIntensity={1.5}
           />
         </mesh>
 
@@ -100,9 +125,10 @@ export function MechaDragonModel({
           <mesh castShadow>
             <boxGeometry args={[0.06, 0.24, 0.08]} />
             <meshStandardMaterial
+              ref={hornMatRef}
               color={accentColor}
               emissive={accentColor}
-              emissiveIntensity={neonIntensity * 0.8}
+              emissiveIntensity={1.2}
               metalness={0.9}
             />
           </mesh>
@@ -114,59 +140,53 @@ export function MechaDragonModel({
             <meshStandardMaterial
               color={accentColor}
               emissive={accentColor}
-              emissiveIntensity={neonIntensity * 0.8}
+              emissiveIntensity={1.2}
               metalness={0.9}
             />
           </mesh>
         </group>
       </group>
 
-      {/* メカニカルウィング (Mecha Wings - 喋ると羽ばたく) */}
+      {/* メカニカルウィング (Mecha Wings - useFrameで羽ばたく) */}
       {/* 右翼 */}
-      <group position={[0.16, 0.38, -0.16]} rotation={[0, wingAngle, -0.2]}>
-        {/* 翼の主骨格 */}
+      <group ref={rightWingRef} position={[0.16, 0.38, -0.16]} rotation={[0, 0.15, -0.2]}>
         <mesh castShadow position={[0.2, 0.12, 0]}>
           <boxGeometry args={[0.38, 0.06, 0.04]} />
           <meshStandardMaterial color={color} metalness={0.8} />
         </mesh>
-        {/* 翼のエナジーブレード (ゴールド発光) */}
         <mesh position={[0.24, 0.04, 0]}>
           <boxGeometry args={[0.34, 0.18, 0.02]} />
           <meshStandardMaterial
             color={accentColor}
             emissive={accentColor}
-            emissiveIntensity={neonIntensity}
+            emissiveIntensity={1.5}
             metalness={0.8}
           />
         </mesh>
-        {/* 翼端の鋭角スパイク */}
         <mesh position={[0.42, 0.16, 0]}>
           <boxGeometry args={[0.08, 0.12, 0.03]} />
-          <meshStandardMaterial color={cyanEnergy} emissive={cyanEnergy} emissiveIntensity={neonIntensity} />
+          <meshStandardMaterial color={cyanEnergy} emissive={cyanEnergy} emissiveIntensity={1.5} />
         </mesh>
       </group>
 
       {/* 左翼 */}
-      <group position={[-0.16, 0.38, -0.16]} rotation={[0, -wingAngle, 0.2]}>
-        {/* 翼の主骨格 */}
+      <group ref={leftWingRef} position={[-0.16, 0.38, -0.16]} rotation={[0, -0.15, 0.2]}>
         <mesh castShadow position={[-0.2, 0.12, 0]}>
           <boxGeometry args={[0.38, 0.06, 0.04]} />
           <meshStandardMaterial color={color} metalness={0.8} />
         </mesh>
-        {/* 翼のエナジーブレード (ゴールド発光) */}
         <mesh position={[-0.24, 0.04, 0]}>
           <boxGeometry args={[0.34, 0.18, 0.02]} />
           <meshStandardMaterial
             color={accentColor}
             emissive={accentColor}
-            emissiveIntensity={neonIntensity}
+            emissiveIntensity={1.5}
             metalness={0.8}
           />
         </mesh>
-        {/* 翼端の鋭角スパイク */}
         <mesh position={[-0.42, 0.16, 0]}>
           <boxGeometry args={[0.08, 0.12, 0.03]} />
-          <meshStandardMaterial color={cyanEnergy} emissive={cyanEnergy} emissiveIntensity={neonIntensity} />
+          <meshStandardMaterial color={cyanEnergy} emissive={cyanEnergy} emissiveIntensity={1.5} />
         </mesh>
       </group>
 
@@ -180,13 +200,12 @@ export function MechaDragonModel({
           <boxGeometry args={[0.08, 0.08, 0.18]} />
           <meshStandardMaterial color={color} metalness={0.8} />
         </mesh>
-        {/* 尾端のゴールドブレード */}
         <mesh position={[0, 0.12, -0.34]} rotation={[0.6, 0, 0]}>
           <boxGeometry args={[0.04, 0.18, 0.14]} />
           <meshStandardMaterial
             color={accentColor}
             emissive={accentColor}
-            emissiveIntensity={neonIntensity}
+            emissiveIntensity={1.5}
             metalness={0.9}
           />
         </mesh>
@@ -205,7 +224,6 @@ export function MechaDragonModel({
       {/* 脚部 (Legs - 着席・直立ポーズ) */}
       {isSitting ? (
         <group name="Legs_Sitting" position={[0, 0.05, 0.12]}>
-          {/* 着席時: 太ももと爪先 */}
           <mesh castShadow position={[0.11, 0, 0.12]}>
             <boxGeometry args={[0.12, 0.12, 0.3]} />
             <meshStandardMaterial color={skinColor} metalness={0.8} />
@@ -214,7 +232,6 @@ export function MechaDragonModel({
             <boxGeometry args={[0.12, 0.12, 0.3]} />
             <meshStandardMaterial color={skinColor} metalness={0.8} />
           </mesh>
-          {/* 足先のゴールド爪 */}
           <mesh position={[0.11, -0.03, 0.26]}>
             <boxGeometry args={[0.1, 0.04, 0.08]} />
             <meshStandardMaterial color={accentColor} metalness={0.9} />
@@ -226,7 +243,6 @@ export function MechaDragonModel({
         </group>
       ) : (
         <group name="Legs_Standing" position={[0, 0.02, 0]}>
-          {/* 直立時 */}
           <mesh castShadow position={[0.11, -0.1, 0]}>
             <boxGeometry args={[0.12, 0.28, 0.14]} />
             <meshStandardMaterial color={skinColor} metalness={0.8} />
@@ -235,7 +251,6 @@ export function MechaDragonModel({
             <boxGeometry args={[0.12, 0.28, 0.14]} />
             <meshStandardMaterial color={skinColor} metalness={0.8} />
           </mesh>
-          {/* 足先のゴールド爪 */}
           <mesh position={[0.11, -0.22, 0.06]}>
             <boxGeometry args={[0.12, 0.06, 0.12]} />
             <meshStandardMaterial color={accentColor} metalness={0.9} />

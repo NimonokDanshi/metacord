@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 import { AvatarModelProps } from '@/types/avatar';
 
 /**
  * ChubbyChickModel (Common)
  * コロンと丸い黄色いヒヨコのアバター
- * - まんまるな黄色い胴体、オレンジの小さなくちばし、頭のぴょこんとしたトサカ羽
- * - 喋っている間 (isSpeaking = true) は小さな羽をパタパタ動かします
+ * - 喋っている間 (isSpeaking = true) は小さな羽をリアルタイムに激しくパタパタ動かします
  * - 着席時 (isSitting = true) は足をちょこんと前方に投げ出して座ります
  */
 export function ChubbyChickModel({
@@ -15,8 +16,22 @@ export function ChubbyChickModel({
   isSitting = false,
   isSpeaking = false,
 }: AvatarModelProps) {
-  // 喋っている時の羽パタパタ角度
-  const wingFlap = isSpeaking ? 0.35 : 0;
+  const rightWingRef = useRef<THREE.Group>(null);
+  const leftWingRef = useRef<THREE.Group>(null);
+
+  // 毎フレームのアニメーション処理 (60fps)
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    if (isSpeaking) {
+      // 喋っている時は羽を高速にパタパタ羽ばたかせる (18Hz)
+      const flap = Math.sin(t * 18) * 0.45;
+      if (rightWingRef.current) rightWingRef.current.rotation.z = flap;
+      if (leftWingRef.current) leftWingRef.current.rotation.z = -flap;
+    } else {
+      if (rightWingRef.current) rightWingRef.current.rotation.z = 0;
+      if (leftWingRef.current) leftWingRef.current.rotation.z = 0;
+    }
+  });
 
   return (
     <group>
@@ -75,16 +90,16 @@ export function ChubbyChickModel({
         <meshStandardMaterial color={accentColor} roughness={0.6} />
       </mesh>
 
-      {/* 小さな羽 (Tiny Wings - 喋るとパタパタ動く) */}
+      {/* 小さな羽 (Tiny Wings - useFrameでパタパタ動く) */}
       {/* 右羽 */}
-      <group position={[0.2, 0.3, 0]} rotation={[0, 0, wingFlap]}>
+      <group ref={rightWingRef} position={[0.2, 0.3, 0]}>
         <mesh castShadow position={[0.03, 0, 0]}>
           <boxGeometry args={[0.06, 0.16, 0.18]} />
           <meshStandardMaterial color={color} />
         </mesh>
       </group>
       {/* 左羽 */}
-      <group position={[-0.2, 0.3, 0]} rotation={[0, 0, -wingFlap]}>
+      <group ref={leftWingRef} position={[-0.2, 0.3, 0]}>
         <mesh castShadow position={[-0.03, 0, 0]}>
           <boxGeometry args={[0.06, 0.16, 0.18]} />
           <meshStandardMaterial color={color} />

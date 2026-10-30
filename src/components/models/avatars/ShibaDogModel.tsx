@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 import { AvatarModelProps } from '@/types/avatar';
 
 /**
  * ShibaDogModel (Rare)
  * 愛らしいボクセル柴犬のアバター
- * - ピンと立った三角耳と、くるんとした巻き尾、赤い首輪が特徴
+ * - 喋っている間 (isSpeaking = true) は耳がリアルタイムにパタパタ動きます
  * - 着席時 (isSitting = true) はお行儀よく「おすわり」ポーズに変化
- * - 喋っている間 (isSpeaking = true) は耳が前後にパタパタ動きます
  */
 export function ShibaDogModel({
   color = '#c27838',          // 柴犬の赤茶（フォーン）
@@ -14,8 +15,27 @@ export function ShibaDogModel({
   isSitting = false,
   isSpeaking = false,
 }: AvatarModelProps) {
-  // 耳のパタパタ角度 (喋っている時)
-  const earWiggle = isSpeaking ? 0.25 : 0;
+  const rightEarRef = useRef<THREE.Group>(null);
+  const leftEarRef = useRef<THREE.Group>(null);
+  const tailRef = useRef<THREE.Group>(null);
+
+  // 毎フレームのアニメーション処理 (60fps)
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    if (isSpeaking) {
+      // 喋っている時は耳が素早くパタパタ動く (15Hz)
+      const earAngle = Math.sin(t * 15) * 0.25;
+      if (rightEarRef.current) rightEarRef.current.rotation.x = -earAngle;
+      if (leftEarRef.current) leftEarRef.current.rotation.x = -earAngle;
+      // 尻尾も嬉しそうに左右に振る
+      if (tailRef.current) tailRef.current.rotation.y = Math.sin(t * 12) * 0.2;
+    } else {
+      // 待機時は定位置に戻す
+      if (rightEarRef.current) rightEarRef.current.rotation.x = 0;
+      if (leftEarRef.current) leftEarRef.current.rotation.x = 0;
+      if (tailRef.current) tailRef.current.rotation.y = 0;
+    }
+  });
 
   return (
     <group>
@@ -64,12 +84,10 @@ export function ShibaDogModel({
 
         {/* マズル・鼻口 (Muzzle) */}
         <group position={[0, -0.06, 0.18]}>
-          {/* 口元の白 */}
           <mesh castShadow>
             <boxGeometry args={[0.16, 0.12, 0.12]} />
             <meshStandardMaterial color={skinColor} roughness={0.9} />
           </mesh>
-          {/* 黒い鼻 */}
           <mesh castShadow position={[0, 0.04, 0.062]}>
             <boxGeometry args={[0.06, 0.04, 0.02]} />
             <meshStandardMaterial color="#1c1917" roughness={0.4} />
@@ -86,7 +104,7 @@ export function ShibaDogModel({
           <meshStandardMaterial color="#1c1917" roughness={0.3} />
         </mesh>
 
-        {/* 柴犬の麻呂眉 (眉毛の白い斑点) */}
+        {/* 麻呂眉 */}
         <mesh position={[0.08, 0.12, 0.142]}>
           <boxGeometry args={[0.04, 0.03, 0.01]} />
           <meshStandardMaterial color={skinColor} />
@@ -96,9 +114,8 @@ export function ShibaDogModel({
           <meshStandardMaterial color={skinColor} />
         </mesh>
 
-        {/* 三角耳 (Ears) - 喋るとパタパタ動く */}
-        {/* 右耳 */}
-        <group position={[0.12, 0.18, -0.02]} rotation={[-earWiggle, 0, 0.15]}>
+        {/* 三角耳 (Ears) - useFrameでパタパタ動く */}
+        <group ref={rightEarRef} position={[0.12, 0.18, -0.02]} rotation={[0, 0, 0.15]}>
           <mesh castShadow>
             <boxGeometry args={[0.08, 0.12, 0.06]} />
             <meshStandardMaterial color={color} />
@@ -108,8 +125,8 @@ export function ShibaDogModel({
             <meshStandardMaterial color="#fda4af" />
           </mesh>
         </group>
-        {/* 左耳 */}
-        <group position={[-0.12, 0.18, -0.02]} rotation={[-earWiggle, 0, -0.15]}>
+
+        <group ref={leftEarRef} position={[-0.12, 0.18, -0.02]} rotation={[0, 0, -0.15]}>
           <mesh castShadow>
             <boxGeometry args={[0.08, 0.12, 0.06]} />
             <meshStandardMaterial color={color} />
@@ -122,13 +139,11 @@ export function ShibaDogModel({
       </group>
 
       {/* 巻き尾 (Curled Tail) */}
-      <group position={[0, 0.36, -0.26]} rotation={[0.4, 0, 0]}>
-        {/* 根元 */}
+      <group ref={tailRef} position={[0, 0.36, -0.26]} rotation={[0.4, 0, 0]}>
         <mesh castShadow position={[0, 0.06, 0]}>
           <boxGeometry args={[0.08, 0.12, 0.08]} />
           <meshStandardMaterial color={color} />
         </mesh>
-        {/* 巻き返しの先端 (白混じり) */}
         <mesh castShadow position={[0, 0.12, 0.06]} rotation={[-0.6, 0, 0]}>
           <boxGeometry args={[0.07, 0.1, 0.07]} />
           <meshStandardMaterial color={skinColor} />
@@ -138,7 +153,7 @@ export function ShibaDogModel({
       {/* 脚 (Legs) - おすわり(着席) と 立ちポーズの切り替え */}
       {isSitting ? (
         <group name="Legs_Sitting">
-          {/* 前足 (まっすぐ床について姿勢を保つ) */}
+          {/* 前足 */}
           <mesh castShadow position={[0.1, 0.09, 0.08]}>
             <boxGeometry args={[0.09, 0.18, 0.09]} />
             <meshStandardMaterial color={skinColor} />
@@ -147,7 +162,7 @@ export function ShibaDogModel({
             <boxGeometry args={[0.09, 0.18, 0.09]} />
             <meshStandardMaterial color={skinColor} />
           </mesh>
-          {/* 後ろ足 (おすわりポーズ: 横に折り曲げて接地) */}
+          {/* 後ろ足 (おすわりポーズ) */}
           <mesh castShadow position={[0.14, 0.06, -0.16]} rotation={[0.2, 0, 0]}>
             <boxGeometry args={[0.1, 0.12, 0.2]} />
             <meshStandardMaterial color={color} />
@@ -156,7 +171,6 @@ export function ShibaDogModel({
             <boxGeometry args={[0.1, 0.12, 0.2]} />
             <meshStandardMaterial color={color} />
           </mesh>
-          {/* 後ろ足先の白 */}
           <mesh position={[0.14, 0.02, -0.06]}>
             <boxGeometry args={[0.08, 0.06, 0.08]} />
             <meshStandardMaterial color={skinColor} />
@@ -186,7 +200,6 @@ export function ShibaDogModel({
             <boxGeometry args={[0.09, 0.16, 0.09]} />
             <meshStandardMaterial color={color} />
           </mesh>
-          {/* 足先の白 */}
           <mesh position={[0.11, 0.02, -0.2]}>
             <boxGeometry args={[0.092, 0.04, 0.092]} />
             <meshStandardMaterial color={skinColor} />

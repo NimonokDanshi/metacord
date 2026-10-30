@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 import { AvatarModelProps } from '@/types/avatar';
 
 /**
  * BaristaBearModel (Common)
  * カフェエプロンを着けた癒やし系のボクセルクマさんアバター
- * - 丸い耳、白いマズル、ダークグリーンのカフェエプロン
- * - 喋っている間 (isSpeaking = true) は耳がピコピコ動きます
+ * - 喋っている間 (isSpeaking = true) は耳がリアルタイムにピコピコ動きます
  * - 着席時 (isSitting = true) は脚を前方に折り曲げて着席します
  */
 export function BaristaBearModel({
@@ -15,8 +16,22 @@ export function BaristaBearModel({
   isSitting = false,
   isSpeaking = false,
 }: AvatarModelProps) {
-  // 耳のピコピコ角度
-  const earWiggle = isSpeaking ? 0.2 : 0;
+  const rightEarRef = useRef<THREE.Group>(null);
+  const leftEarRef = useRef<THREE.Group>(null);
+
+  // 毎フレームのアニメーション処理 (60fps)
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    if (isSpeaking) {
+      // 喋っている時は耳がピコピコ上下・前後に揺れる
+      const earWiggle = Math.sin(t * 14) * 0.22;
+      if (rightEarRef.current) rightEarRef.current.rotation.x = earWiggle;
+      if (leftEarRef.current) leftEarRef.current.rotation.x = earWiggle;
+    } else {
+      if (rightEarRef.current) rightEarRef.current.rotation.x = 0;
+      if (leftEarRef.current) leftEarRef.current.rotation.x = 0;
+    }
+  });
 
   return (
     <group>
@@ -76,9 +91,9 @@ export function BaristaBearModel({
           <meshStandardMaterial color="#1c1917" roughness={0.2} />
         </mesh>
 
-        {/* 丸い耳 (Round Bear Ears - 喋るとピコピコ動く) */}
+        {/* 丸い耳 (Round Bear Ears - useFrameでピコピコ動く) */}
         {/* 右耳 */}
-        <group position={[0.16, 0.18, -0.02]} rotation={[earWiggle, 0, 0.1]}>
+        <group ref={rightEarRef} position={[0.16, 0.18, -0.02]} rotation={[0, 0, 0.1]}>
           <mesh castShadow>
             <boxGeometry args={[0.1, 0.1, 0.06]} />
             <meshStandardMaterial color={color} />
@@ -89,7 +104,7 @@ export function BaristaBearModel({
           </mesh>
         </group>
         {/* 左耳 */}
-        <group position={[-0.16, 0.18, -0.02]} rotation={[earWiggle, 0, -0.1]}>
+        <group ref={leftEarRef} position={[-0.16, 0.18, -0.02]} rotation={[0, 0, -0.1]}>
           <mesh castShadow>
             <boxGeometry args={[0.1, 0.1, 0.06]} />
             <meshStandardMaterial color={color} />
