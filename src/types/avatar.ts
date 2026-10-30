@@ -47,6 +47,8 @@ export interface AvatarMetadata {
   description: string;
   /** レアリティ（ランク） */
   rarity: AvatarRarity;
+  /** アバターのギミック・特徴リスト */
+  features?: string[];
   /** 描画する3Dコンポーネント (AvatarModelPropsを満たすもの) */
   component: React.ComponentType<AvatarModelProps>;
   /** 入室時SEの識別子（オプション） */

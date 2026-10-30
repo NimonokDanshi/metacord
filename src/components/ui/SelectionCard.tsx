@@ -15,11 +15,12 @@ interface Props {
   isLocked?: boolean;
   onClick: () => void;
   onPurchase?: () => void;
+  onDetail?: () => void;
   className?: string;
 }
 
 /**
- * アイテム選択画面用の汎用カードコンポーネント (レアリティ & Discord直接購入対応)
+ * アイテム選択画面用の汎用カードコンポーネント (レアリティ & Discord直接購入 & 詳細プレビュー対応)
  */
 export function SelectionCard({
   name,
@@ -32,6 +33,7 @@ export function SelectionCard({
   isLocked,
   onClick,
   onPurchase,
+  onDetail,
   className = ''
 }: Props) {
   const rarityConfig = rarity ? RARITY_CONFIG[rarity] : null;
@@ -84,6 +86,24 @@ export function SelectionCard({
           <div className="absolute top-1.5 right-1.5 z-20">
             <VoxelRarityBadge rarity={rarity} size="sm" />
           </div>
+        )}
+
+        {/* 詳細プレビューボタン (右下) */}
+        {onDetail && !isLocked && (
+          <button
+            type="button"
+            title="アバター詳細・ギミックプレビュー"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDetail();
+            }}
+            className="absolute bottom-1.5 right-1.5 z-20 w-5 h-5 flex items-center justify-center bg-black/80 hover:bg-[#4cc9f0] hover:text-black text-white/90 text-[11px] font-black border border-white/20 transition-all shadow-md active:scale-90"
+            style={{
+              clipPath: 'polygon(0 2px, 2px 2px, 2px 0, calc(100% - 2px) 0, calc(100% - 2px) 2px, 100% 2px, 100% calc(100% - 2px), calc(100% - 2px) calc(100% - 2px), calc(100% - 2px) 100%, 2px 100%, 2px calc(100% - 2px), 0 calc(100% - 2px))'
+            }}
+          >
+            ?
+          </button>
         )}
 
         {!isLocked ? (

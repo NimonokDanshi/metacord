@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDiscordStore } from '@/stores/discordStore';
 import { useMonetizationStore } from '@/stores/monetizationStore';
 import { monetizationActions } from '@/actions/monetizationActions';
 import { AvatarType } from '@/types/room';
 import { AVATAR_REGISTRY } from '@/constants/avatarRegistry';
-import { AvatarRarity } from '@/types/avatar';
+import { AvatarMetadata, AvatarRarity } from '@/types/avatar';
 import { AvatarPreview } from './AvatarPreview';
 import { SelectionGrid } from './SelectionGrid';
 import { SelectionCard } from './SelectionCard';
+import { AvatarDetailModal } from './AvatarDetailModal';
 import { roomActions } from '@/actions/roomActions';
 
 const COMING_SOON_RARITIES: AvatarRarity[] = ['epic', 'legendary', 'ultimate', 'rare', 'common'];
@@ -15,6 +16,7 @@ const COMING_SOON_RARITIES: AvatarRarity[] = ['epic', 'legendary', 'ultimate', '
 export function AvatarSelector() {
   const { avatarType } = useDiscordStore();
   const { isPurchased } = useMonetizationStore();
+  const [detailAvatar, setDetailAvatar] = useState<AvatarMetadata | null>(null);
 
   const handleSelect = async (type: AvatarType) => {
     await roomActions.updateAvatar(type);
@@ -44,29 +46,47 @@ export function AvatarSelector() {
   }
 
   return (
-    <SelectionGrid>
-      {displayAvatars.map((avatar, index) => {
-        const isSelected = avatarType === avatar.id;
-        const isLocked = avatar.id.startsWith('locked');
-        const skuId = avatar.monetization?.skuId;
-        const purchased = isPurchased(skuId);
+    <>
+      <SelectionGrid>
+        {displayAvatars.map((avatar, index) => {
+          const isSelected = avatarType === avatar.id;
+          const isLocked = avatar.id.startsWith('locked');
+          const skuId = avatar.monetization?.skuId;
+          const purchased = isPurchased(skuId);
 
-        return (
-          <SelectionCard
-            key={`${avatar.id}-${index}`}
-            name={avatar.name}
-            description={avatar.description}
-            rarity={avatar.rarity}
-            monetization={avatar.monetization}
-            isPurchased={purchased}
-            preview={!isLocked ? <AvatarPreview component={avatar.component} /> : null}
-            isSelected={isSelected}
-            isLocked={isLocked}
-            onClick={() => handleSelect(avatar.id)}
-            onPurchase={skuId ? () => handlePurchase(skuId, avatar.name, avatar.id) : undefined}
-          />
-        );
-      })}
-    </SelectionGrid>
+          return (
+            <SelectionCard
+              key={`${avatar.id}-${index}`}
+              name={avatar.name}
+              description={avatar.description}
+              rarity={avatar.rarity}
+              monetization={avatar.monetization}
+              isPurchased={purchased}
+              preview={!isLocked ? <AvatarPreview component={avatar.component} /> : null}
+              isSelected={isSelected}
+              isLocked={isLocked}
+              onClick={() => handleSelect(avatar.id)}
+              onPurchase={skuId ? () => handlePurchase(skuId, avatar.name, avatar.id) : undefined}
+              onDetail={!isLocked ? () => setDetailAvatar(avatar) : undefined}
+            />
+          );
+        })}
+      </SelectionGrid>
+
+      {/* アバター詳細＆ギミックテストモーダル */}
+      {detailAvatar && (
+        <AvatarDetailModal
+          avatar={detailAvatar}
+          isOpen={!!detailAvatar}
+          isSelected={avatarType === detailAvatar.id}
+          isPurchased={isPurchased(detailAvatar.monetization?.skuId)}
+          onClose={() => setDetailAvatar(null)}
+          onSelect={() => handleSelect(detailAvatar.id)}
+          onPurchase={detailAvatar.monetization?.skuId
+            ? () => handlePurchase(detailAvatar.monetization!.skuId!, detailAvatar.name, detailAvatar.id)
+            : undefined}
+        />
+      )}
+    </>
   );
 }

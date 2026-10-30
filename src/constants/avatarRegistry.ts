@@ -13,10 +13,7 @@ export type { AvatarMetadata, AvatarModelProps, AvatarRarity };
 
 /**
  * アバターレジストリ
- * 各アバターのランク（rarity: common / rare / epic / legendary / ultimate）および
- * 課金情報（monetization）を定義。
- * 新しいアバターを追加する際は、モデル作成後にここに1行追加するだけで
- * アバター選択UI、プレビュー、3D空間への描画に自動的に反映されます。
+ * 各アバターのランク、ギミック特徴（features）、課金情報（monetization）を定義。
  */
 export const AVATAR_REGISTRY: AvatarMetadata[] = [
   {
@@ -24,6 +21,10 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
     name: 'Standard Bot',
     description: 'The classic blue voxel bot.',
     rarity: 'common',
+    features: [
+      'クラシックなボクセルロボット',
+      '座席に着席して足を前に伸ばすポーズ'
+    ],
     component: DefaultAvatarModel
   },
   {
@@ -31,6 +32,11 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
     name: 'Chubby Chick',
     description: 'A round yellow chick with tiny flapping wings.',
     rarity: 'common',
+    features: [
+      'まんまるな黄色いマスコットボディ',
+      '発言時: 小さな羽を一生懸命パタパタ羽ばたかせる',
+      '着席時: オレンジの足を前へちょこんと揃えて座る'
+    ],
     component: ChubbyChickModel
   },
   {
@@ -38,6 +44,11 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
     name: 'Barista Bear',
     description: 'A calm brown bear wearing a cozy cafe apron.',
     rarity: 'common',
+    features: [
+      '落ち着いたブラウン毛並みとペン付きカフェエプロン',
+      '発言時: まあるい耳がピコピコ動く',
+      '着席時: 脚を前方に折りたたんで着席'
+    ],
     component: BaristaBearModel
   },
   {
@@ -45,6 +56,11 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
     name: 'Shiba Dog',
     description: 'A cheerful Japanese Shiba Inu with a curled tail.',
     rarity: 'rare',
+    features: [
+      'ピンと立った三角耳、麻呂眉、くるんとした巻き尾',
+      '発言時: 耳が嬉しそうにパタパタ動く',
+      '着席時: お行儀よく「おすわり」ポーズに変化'
+    ],
     component: ShibaDogModel
   },
   {
@@ -52,6 +68,10 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
     name: 'Polar Penguin',
     description: 'A chilly friend from the south pole.',
     rarity: 'rare',
+    features: [
+      'ぽっこりお腹と黄色いくちばし・足',
+      '着席時: 黄色い足を前方に揃えて座る'
+    ],
     component: PenguinModel
   },
   {
@@ -59,6 +79,10 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
     name: 'Gray Tabby',
     description: 'A cool gray cat in voxel art.',
     rarity: 'rare',
+    features: [
+      '4足歩行のスマートなグレートラ猫',
+      'ピンと上を向いたしっぽとピンクの耳・鼻'
+    ],
     component: CatModel
   },
   {
@@ -66,6 +90,11 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
     name: 'Cyber Bunny',
     description: 'Neon-lit cyber rabbit equipped with a luminous visor.',
     rarity: 'epic',
+    features: [
+      'サイバーゴーグル（バイザー）＆ネオンイヤー装備',
+      '発言時: ゴーグルとイヤーのネオン発光輝度がブースト',
+      '着席時: ネオンソールのスニーカーで着席'
+    ],
     component: CyberBunnyModel,
     monetization: {
       isPremium: true,
@@ -79,6 +108,12 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
     name: 'Mecha Dragon',
     description: 'Armored metallic dragon with radiant golden energy horns and wings.',
     rarity: 'legendary',
+    features: [
+      'ガンメタルとゴールドの重厚なロボット装甲',
+      '胸部に青く輝くエナジーコア＆エナジーホーン',
+      '発言時: 角とコアが激しく発光 ＆ 背中の翼が大きく羽ばたく',
+      '着席時: 脚部を折りたたんで着席'
+    ],
     component: MechaDragonModel,
     monetization: {
       isPremium: true,
