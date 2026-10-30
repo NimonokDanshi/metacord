@@ -44,7 +44,8 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
     component: CyberBunnyModel,
     monetization: {
       isPremium: true,
-      priceLabel: 'PRO',
+      skuId: 'sku_cyber_bunny',
+      priceLabel: '$1.99',
       requiredTier: 'pro'
     }
   }

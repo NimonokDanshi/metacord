@@ -7,6 +7,7 @@ import { DiscordUser, DiscordChannel, VoiceState, getDiscordAvatarUrl } from '@/
 import { supabase } from '@/utils/supabase';
 import { AvatarType } from '@/types/room';
 import { parseMySet } from '@/utils/userMetadataUtil';
+import { monetizationActions } from '@/actions/monetizationActions';
 
 import DebugOverlay from './DebugOverlay';
 
@@ -86,7 +87,6 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
             }
           ]);
 
-
           // Supabaseへのダミー登録（アバター選択などを試せるように）
           if (supabase) {
             const { data: upsertedUser } = await supabase.from('m_users')
@@ -105,6 +105,9 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
               setMySet(parseMySet(upsertedUser.metadata));
             }
           }
+
+          // 所有権のロード
+          await monetizationActions.fetchEntitlements();
 
           setReady(true);
           setIsConnected(true);
@@ -168,6 +171,9 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
             global_name: auth.user.global_name,
           };
           setUser(discordUser);
+
+          // 購入済みアイテム (Entitlements) のロード
+          await monetizationActions.fetchEntitlements();
 
           // Supabase のプロフィール同期
           if (supabase) {

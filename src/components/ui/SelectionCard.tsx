@@ -10,14 +10,16 @@ interface Props {
   preview: React.ReactNode;
   rarity?: AvatarRarity;
   monetization?: AvatarMonetization;
+  isPurchased?: boolean;
   isSelected?: boolean;
   isLocked?: boolean;
   onClick: () => void;
+  onPurchase?: () => void;
   className?: string;
 }
 
 /**
- * アイテム選択画面用の汎用カードコンポーネント (レアリティ & 課金拡張対応)
+ * アイテム選択画面用の汎用カードコンポーネント (レアリティ & Discord直接購入対応)
  */
 export function SelectionCard({
   name,
@@ -25,12 +27,17 @@ export function SelectionCard({
   preview,
   rarity,
   monetization,
+  isPurchased = true,
   isSelected,
   isLocked,
   onClick,
+  onPurchase,
   className = ''
 }: Props) {
   const rarityConfig = rarity ? RARITY_CONFIG[rarity] : null;
+
+  // 課金アイテムで未購入かどうかの判定
+  const needsPurchase = !!(monetization?.isPremium && !isPurchased);
 
   // 枠線とシャドウのスタイル決定
   let cardStyles = 'bg-black/30 border-white/10 hover:border-white/30';
@@ -40,6 +47,8 @@ export function SelectionCard({
     } else {
       cardStyles = 'bg-[#4cc9f0]/10 border-[#4cc9f0] shadow-[4px_4px_0_0_#4cc9f0]';
     }
+  } else if (needsPurchase) {
+    cardStyles = 'bg-amber-950/20 border border-amber-500/40 hover:border-amber-400';
   } else if (rarityConfig) {
     cardStyles = `bg-black/30 border ${rarityConfig.borderColor} hover:border-opacity-100`;
   }
@@ -58,9 +67,15 @@ export function SelectionCard({
         {/* 課金 / プレミアムバッジ (左上) */}
         {monetization?.isPremium && !isLocked && (
           <div className="absolute top-1.5 left-1.5 z-20">
-            <span className="inline-flex items-center px-1.5 py-0.5 text-[8px] font-black tracking-wider bg-gradient-to-r from-amber-500 to-yellow-300 text-black border border-amber-200 shadow-sm">
-              💎 {monetization.priceLabel || 'PREMIUM'}
-            </span>
+            {needsPurchase ? (
+              <span className="inline-flex items-center px-1.5 py-0.5 text-[8px] font-black tracking-wider bg-gradient-to-r from-amber-500 to-yellow-300 text-black border border-amber-200 shadow-sm">
+                💎 {monetization.priceLabel || 'BUY'}
+              </span>
+            ) : (
+              <span className="inline-flex items-center px-1.5 py-0.5 text-[8px] font-black tracking-wider bg-emerald-500 text-white border border-emerald-300 shadow-sm">
+                ✓ OWNED
+              </span>
+            )}
           </div>
         )}
 
@@ -93,18 +108,30 @@ export function SelectionCard({
         </p>
       )}
 
-      <VoxelButton 
-        disabled={isLocked || isSelected}
-        variant={isSelected ? 'primary' : 'secondary'}
-        className="w-full !text-[9px] !py-1"
-        style={isSelected && rarityConfig ? {
-          backgroundColor: rarityConfig.color,
-          boxShadow: `0 4px 0 0 ${rarityConfig.accentColor}`,
-        } : undefined}
-        onClick={onClick}
-      >
-        {isSelected ? 'SELECTED' : isLocked ? 'LOCKED' : 'SELECT'}
-      </VoxelButton>
+      {/* アクションボタン: 未購入時は「購入」、購入済み・無料時は「選択」 */}
+      {needsPurchase ? (
+        <VoxelButton 
+          disabled={isLocked}
+          variant="primary"
+          className="w-full !text-[9px] !py-1 !bg-amber-500 !shadow-[0_4px_0_0_#b45309] hover:!bg-amber-400 !text-black"
+          onClick={onPurchase}
+        >
+          BUY {monetization.priceLabel || '$1.99'}
+        </VoxelButton>
+      ) : (
+        <VoxelButton 
+          disabled={isLocked || isSelected}
+          variant={isSelected ? 'primary' : 'secondary'}
+          className="w-full !text-[9px] !py-1"
+          style={isSelected && rarityConfig ? {
+            backgroundColor: rarityConfig.color,
+            boxShadow: `0 4px 0 0 ${rarityConfig.accentColor}`,
+          } : undefined}
+          onClick={onClick}
+        >
+          {isSelected ? 'SELECTED' : isLocked ? 'LOCKED' : 'SELECT'}
+        </VoxelButton>
+      )}
     </div>
   );
 }
