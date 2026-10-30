@@ -20,7 +20,7 @@ export function FurnitureBottomBar() {
   const filteredItems = ROOM_ITEMS.filter(item => item.type === selectedCategoryId);
 
   return (
-    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[100] w-full max-w-3xl px-4">
+    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[100] w-full max-w-4xl px-4">
       <div className="flex flex-col gap-2">
         
         {/* Category Tabs (Outside the main box) */}
@@ -33,10 +33,10 @@ export function FurnitureBottomBar() {
                 onClick={() => setCategoryId(cat.id)}
                 className={`
                   flex-shrink-0 px-4 py-1.5 border-2 transition-all duration-200
-                  text-[10px] font-black uppercase tracking-tighter
+                  text-[11px] font-black uppercase tracking-tighter
                   ${isActive 
                     ? 'bg-[#4cc9f0] border-white text-white shadow-[0_4px_0_0_#4361ee] -translate-y-1' 
-                    : 'bg-[#1a1a2e]/60 border-[#4361ee]/50 text-white/50 hover:text-white hover:border-[#4cc9f0]'}
+                    : 'bg-[#1a1a2e]/80 border-[#4361ee]/50 text-white/60 hover:text-white hover:border-[#4cc9f0]'}
                 `}
               >
                 {cat.name}
@@ -46,22 +46,22 @@ export function FurnitureBottomBar() {
         </div>
 
         {/* Main Inventory Box */}
-        <div className="bg-[#1a1a2e]/80 backdrop-blur-md border-4 border-[#4361ee] p-4 shadow-[0_0_20px_rgba(67,97,238,0.4)] flex flex-col gap-3">
+        <div className="bg-[#1a1a2e]/90 backdrop-blur-md border-4 border-[#4361ee] p-4 shadow-[0_0_24px_rgba(67,97,238,0.5)] flex flex-col gap-3">
           {/* Header */}
           <div className="flex justify-between items-center border-b border-[#4361ee]/30 pb-2">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-[#4cc9f0] animate-pulse" />
-              <span className="text-white font-black text-xs tracking-widest uppercase opacity-70">
+              <div className="w-2.5 h-2.5 bg-[#4cc9f0] animate-pulse" />
+              <span className="text-white font-black text-xs tracking-widest uppercase opacity-80">
                 {ROOM_CATEGORIES.find(c => c.id === selectedCategoryId)?.name} Inventory
               </span>
             </div>
-            <span className="text-[#4cc9f0] text-[9px] font-bold tracking-widest">
+            <span className="text-[#4cc9f0] text-[10px] font-bold tracking-widest">
               {filteredItems.length} ITEMS AVAILABLE
             </span>
           </div>
 
-          {/* Items Grid/Carousel */}
-          <div className="flex gap-4 overflow-x-auto py-2 scrollbar-hide min-h-[120px]">
+          {/* Items Grid/Carousel (横スクロール対応 & 大判カード) */}
+          <div className="flex gap-4 overflow-x-auto py-2 scrollbar-thin scrollbar-thumb-cyan-500/50 scrollbar-track-slate-800/40 min-h-[148px]">
             {filteredItems.length > 0 ? (
               filteredItems.map((item) => {
                 const isSelected = selectedItemId === item.id;
@@ -70,38 +70,38 @@ export function FurnitureBottomBar() {
                     key={item.id}
                     onClick={() => setSelectedItem(isSelected ? null : item.id)}
                     className={`
-                      relative flex-shrink-0 w-24 h-24 border-4 transition-all duration-200 group
+                      relative flex-shrink-0 w-32 h-32 border-4 transition-all duration-200 group flex flex-col
                       ${isSelected 
-                        ? 'border-[#4cc9f0] bg-[#4cc9f0]/20 scale-105 shadow-[0_0_20px_#4cc9f0]/50' 
-                        : 'border-[#4361ee]/30 bg-white/5 hover:border-[#4cc9f0]/50 hover:bg-white/10'}
+                        ? 'border-[#4cc9f0] bg-[#4cc9f0]/20 scale-105 shadow-[0_0_20px_#4cc9f0]/60' 
+                        : 'border-[#4361ee]/40 bg-[radial-gradient(circle_at_center,_#334155_0%,_#1e293b_60%,_#090d16_100%)] hover:border-[#4cc9f0]/60 hover:scale-102'}
                     `}
                   >
                     {/* 3D Model Preview */}
-                    <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-full flex-1 flex items-center justify-center p-1 overflow-hidden">
                       <FurniturePreview item={item} />
                     </div>
                     
                     {/* Item Name Label */}
                     <div className={`
-                      absolute -bottom-1 left-0 w-full py-1 transition-colors
-                      ${isSelected ? 'bg-[#4cc9f0]' : 'bg-[#4361ee]/80 group-hover:bg-[#4361ee]'}
+                      w-full py-1 transition-colors border-t border-black/20
+                      ${isSelected ? 'bg-[#4cc9f0]' : 'bg-[#4361ee]/90 group-hover:bg-[#4361ee]'}
                     `}>
-                      <span className="text-[8px] text-white font-black truncate block px-1 uppercase tracking-tighter">
+                      <span className="text-[9px] text-white font-black truncate block px-1 uppercase tracking-tighter text-center">
                         {item.name}
                       </span>
                     </div>
 
                     {/* Selection Marker */}
                     {isSelected && (
-                      <div className="absolute -top-2 -right-2 w-5 h-5 bg-[#4cc9f0] border-2 border-white flex items-center justify-center shadow-lg">
-                        <span className="text-white text-[10px] font-black">✓</span>
+                      <div className="absolute -top-2.5 -right-2.5 w-6 h-6 bg-[#4cc9f0] border-2 border-white flex items-center justify-center shadow-lg">
+                        <span className="text-white text-xs font-black">✓</span>
                       </div>
                     )}
                   </button>
                 );
               })
             ) : (
-              <div className="w-full flex flex-col items-center justify-center opacity-30 gap-2">
+              <div className="w-full flex flex-col items-center justify-center opacity-40 gap-2 py-4">
                 <div className="w-8 h-8 border-2 border-dashed border-white/50 animate-spin" />
                 <span className="text-white text-[10px] font-bold">NO ITEMS IN THIS CATEGORY</span>
               </div>

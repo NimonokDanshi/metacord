@@ -5,16 +5,17 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  maxWidth?: string;
   children: React.ReactNode;
 }
 
-export function VoxelModal({ isOpen, onClose, title, children }: Props) {
+export function VoxelModal({ isOpen, onClose, title, maxWidth = 'max-w-5xl', children }: Props) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100000] flex items-center justify-center p-3 md:p-6 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
-        className="relative bg-[#1a1a2e] border-4 border-[#4cc9f0] shadow-[8px_8px_0_0_#4361ee] max-w-2xl w-full flex flex-col"
+        className={`relative bg-[#1a1a2e] border-4 border-[#4cc9f0] shadow-[8px_8px_0_0_#4361ee] ${maxWidth} w-full flex flex-col`}
         style={{
           imageRendering: 'pixelated'
         }}
@@ -35,7 +36,7 @@ export function VoxelModal({ isOpen, onClose, title, children }: Props) {
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[70vh]">
+        <div className="p-4 md:p-6 overflow-y-auto max-h-[75vh]">
           {children}
         </div>
 
