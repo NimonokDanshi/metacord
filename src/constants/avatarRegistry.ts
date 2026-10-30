@@ -1,18 +1,15 @@
 import { DefaultAvatarModel } from '@/components/models/avatars/DefaultAvatarModel';
 import { PenguinModel } from '@/components/models/avatars/PenguinModel';
 import { CatModel } from '@/components/models/avatars/CatModel';
+import { AvatarMetadata, AvatarModelProps } from '@/types/avatar';
 import { AvatarType } from '@/types/room';
 
-export interface AvatarMetadata {
-  id: AvatarType;
-  name: string;
-  description: string;
-  component: React.ComponentType<any>;
-}
+export type { AvatarMetadata, AvatarModelProps };
 
 /**
  * アバターレジストリ
- * モデルを追加した際は、ここに追記するだけでアバター選択画面に反映されます。
+ * 新しいアバターを追加する際は、モデル作成後にここに1行追加するだけで
+ * アバター選択UI、プレビュー、3D空間への描画に自動的に反映されます。
  */
 export const AVATAR_REGISTRY: AvatarMetadata[] = [
   {
@@ -35,7 +32,10 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
   }
 ];
 
-export function getAvatarComponent(type: AvatarType) {
+/**
+ * IDから対応するアバターコンポーネントを取得します（未登録の場合はデフォルトアバター）
+ */
+export function getAvatarComponent(type: AvatarType): React.ComponentType<AvatarModelProps> {
   const avatar = AVATAR_REGISTRY.find(a => a.id === type);
   return avatar ? avatar.component : DefaultAvatarModel;
 }

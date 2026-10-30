@@ -1,10 +1,6 @@
 import React from 'react';
 import { COLORS } from '@/constants/voxel';
-
-interface Props {
-  color?: string;
-  isSitting?: boolean;
-}
+import { AvatarModelProps } from '@/types/avatar';
 
 /**
  * PenguinModel
@@ -14,7 +10,7 @@ interface Props {
 export function PenguinModel({
   color = COLORS.PENGUIN_BLACK,
   isSitting = false
-}: Props) {
+}: AvatarModelProps) {
   return (
     <group>
       {/* 胴体 */}

@@ -1,9 +1,10 @@
 import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Stage, Center } from '@react-three/drei';
+import { AvatarModelProps } from '@/types/avatar';
 
 interface Props {
-  component: React.ComponentType<any>;
+  component: React.ComponentType<AvatarModelProps>;
 }
 
 /**
@@ -21,7 +22,6 @@ export function AvatarPreview({ component: AvatarModel }: Props) {
         gl={{ antialias: true, alpha: true }}
       >
         <Suspense fallback={null}>
-          {/* Stageはモデルのサイズを計測して自動的にカメラと照明を調整してくれます */}
           <Stage
             intensity={1.0}
             environment={null}

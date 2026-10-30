@@ -1,18 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Workstation } from '@/components/models/desk/Workstation';
-import { CustomWorkstation } from '@/components/models/desk/CustomWorkstation';
-import { JapandiWorkstation } from '@/components/models/desk/JapandiWorkstation';
-import { Chair } from '@/components/models/chair/Chair';
-import { JapandiChair } from '@/components/models/chair/JapandiChair';
-import { Wall } from '@/components/models/wall/Wall';
-import { Floor } from '@/components/models/floor/Floor';
-import { PottedPlant } from '@/components/models/furniture/PottedPlant';
 import { RoomItem, ROOM_ITEMS } from '@/constants/roomItems';
 import { useRoomStore } from '@/stores/roomStore';
-import { useVoxelGrid } from '@/utils/voxelGrid';
 import { parseMySet } from '@/utils/userMetadataUtil';
+import { getFurnitureEntry } from '@/constants/furnitureRegistry';
 
 interface DynamicFurnitureProps {
   id?: string;
@@ -25,14 +17,17 @@ interface DynamicFurnitureProps {
   metadata?: any;
 }
 
+/**
+ * DynamicFurniture (Facade)
+ * 家具レジストリ（FURNITURE_REGISTRY）から対応する3Dモデルを動的に取得・描画します。
+ * 新しい家具を追加しても、このコンポーネントを修正する必要はありません。
+ */
 export function DynamicFurniture({ 
   id,
   item, 
   opacity = 1, 
   colorOverride, 
   rotation = 0,
-  gridX,
-  gridZ,
   metadata
 }: DynamicFurnitureProps) {
   const { setEditing, setSelectedItem, setMovingFurnitureId, setPreviewRotation } = useRoomStore();
@@ -67,6 +62,20 @@ export function DynamicFurniture({
     }
   };
 
+  // MySet による着席中の家具差し替え判定
+  let activeItem = item;
+  if (item.type === 'desk' && occupantMySet?.desk) {
+    activeItem = ROOM_ITEMS.find(it => it.id === occupantMySet.desk) || item;
+  } else if (item.type === 'chair' && occupantMySet?.chair) {
+    activeItem = ROOM_ITEMS.find(it => it.id === occupantMySet.chair) || item;
+  }
+
+  // レジストリからモデルエントリを取得
+  const registryEntry = getFurnitureEntry(activeItem.modelComponent);
+  const ModelComponent = (isOccupied && registryEntry?.occupiedComponent) 
+    ? registryEntry.occupiedComponent 
+    : registryEntry?.component;
+
   return (
     <group 
       rotation={[0, rotation, 0]} 
@@ -74,49 +83,18 @@ export function DynamicFurniture({
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
-      {/* デスクセットの描画 */}
-      {item.type === 'desk' && (
-        <group>
-          {(() => {
-            // 着席者がいて、かつメタデータを持っている場合はそのMySetを優先
-            const deskId = occupantMySet?.desk || item.id;
-            const deskItem = ROOM_ITEMS.find(it => it.id === deskId) || item;
-
-            if (deskItem.modelComponent === 'JapandiWorkstation') {
-              return <JapandiWorkstation pos={{ x: 0, y: 0, z: 0 }} rotation={0} />;
-            }
-            
-            // 標準デスク（Workstation）の場合、着席時は豪華版（CustomWorkstation）を表示
-            if (isOccupied) {
-              return <CustomWorkstation pos={{ x: 0, y: 0, z: 0 }} rotation={0} />;
-            }
-            
-            return <Workstation pos={{ x: 0, y: 0, z: 0 }} rotation={0} />;
-          })()}
-        </group>
+      {/* レジストリから取得した家具モデルを描画 */}
+      {ModelComponent && (
+        <ModelComponent 
+          pos={{ x: 0, y: 0, z: 0 }} 
+          rotation={0} 
+          isOccupied={isOccupied}
+          occupantMySet={occupantMySet}
+          opacity={opacity}
+        />
       )}
 
-      {/* 椅子の描画 (単体) */}
-      {item.type === 'chair' && (
-        <group>
-          {(() => {
-            const chairId = occupantMySet?.chair || item.id;
-            const chairItem = ROOM_ITEMS.find(it => it.id === chairId) || item;
-
-            if (chairItem.modelComponent === 'JapandiChair') {
-              return <JapandiChair pos={{ x: 0, y: 0, z: 0 }} rotation={0} />;
-            }
-            return <Chair pos={{ x: 0, y: 0, z: 0 }} rotation={0} />;
-          })()}
-        </group>
-      )}
-
-      {/* その他の家具 */}
-      {item.type === 'furniture' && item.modelComponent === 'PottedPlant' && <PottedPlant />}
-      {item.modelComponent === 'Wall' && <Wall />}
-      {item.modelComponent === 'Floor' && <Floor />}
-      
-      {/* プレビュー時の色オーバーライド用フィルター（簡易実装） */}
+      {/* プレビュー時の色オーバーライド用フィルター */}
       {colorOverride && (
         <mesh position={[0, 0.05, 0]}>
           <boxGeometry args={[item.sizeX, 0.1, item.sizeZ]} />

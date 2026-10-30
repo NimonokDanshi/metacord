@@ -1,10 +1,6 @@
 import React from 'react';
 import { COLORS } from '@/constants/voxel';
-
-interface Props {
-  color?: string;
-  isSitting?: boolean;
-}
+import { AvatarModelProps } from '@/types/avatar';
 
 /**
  * CatModel
@@ -12,7 +8,7 @@ interface Props {
  */
 export function CatModel({
   color = COLORS.CAT_GREY,
-}: Props) {
+}: AvatarModelProps) {
   return (
     <group>
       {/* 胴体 (Body) - 横長に設定 */}

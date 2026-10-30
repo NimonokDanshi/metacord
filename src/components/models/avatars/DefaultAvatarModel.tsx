@@ -1,17 +1,12 @@
 import React from 'react';
 import { COLORS } from '@/constants/voxel';
-
-interface Props {
-  color?: string;
-  skinColor?: string;
-  isSitting?: boolean;
-}
+import { AvatarModelProps } from '@/types/avatar';
 
 export function DefaultAvatarModel({
   color = COLORS.AVATAR_BLUE,
   skinColor = COLORS.AVATAR_SKIN,
   isSitting = false
-}: Props) {
+}: AvatarModelProps) {
   return (
     <group>
       {/* 胴体 (Body) */}

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { SeatOccupant } from '@/types/room';
 import { Furniture } from '@/types/furniture';
 import { PresenceService } from '@/utils/presenceUtils';
+import { ROOM_ITEMS } from '@/constants/roomItems';
 
 interface RoomStore {
   /** 現在の在室者リスト（user_id → SeatOccupant） */
@@ -133,9 +134,9 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     const { furnitures, movingFurnitureId } = get();
     furnitures.forEach(f => {
       if (f.id === movingFurnitureId) return; // 移動中の家具は計算から除外
-      const isDesk = f.item_id === 'standard-desk';
-      const sizeX = isDesk ? 2 : 1;
-      const sizeZ = isDesk ? 2 : 1; 
+      const item = ROOM_ITEMS.find(it => it.id === f.item_id);
+      const sizeX = item?.sizeX ?? 1;
+      const sizeZ = item?.sizeZ ?? 1;
       for (let dx = 0; dx < sizeX; dx++) {
         for (let dz = 0; dz < sizeZ; dz++) {
           occupied.add(`${f.pos_x + dx},${f.pos_z + dz}`);
