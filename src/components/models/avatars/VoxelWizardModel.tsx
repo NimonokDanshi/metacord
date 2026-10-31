@@ -3,12 +3,14 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { AvatarModelProps } from '@/types/avatar';
 import { AvatarRarityEffects } from '@/components/models/avatars/common/AvatarRarityEffects';
+import { useAvatarGimmick } from '@/components/models/avatars/common/useAvatarGimmick';
 
 /**
  * VoxelWizardModel (Epic)
  * 魔法のローブ、とんがり魔導士帽子、豊かな白ひげ、エナジークリスタルの杖を携えた大魔導士
- * - 発言時 (isSpeaking = true): 杖のクリスタルが激しく青くパルス発光し、杖を高く掲げて呪文を詠唱
- * - 着席時 (isSitting = true): ローブの裾を整えて着席
+ * - 通常発言時: 杖のクリスタルが青くパルス発光し、杖を掲げて呪文を詠唱
+ * - 大声シャウト時 (OVERDRIVE): 杖を天高く掲げ、クリスタルから激しい雷光ボクセルが降り注ぎ、周囲を紫光が照らす！
+ * - 着席時: ローブの裾を整えて着席
  */
 export function VoxelWizardModel({
   color = '#4c1d95',          // ディープパープルの魔導ローブ
@@ -16,11 +18,21 @@ export function VoxelWizardModel({
   accentColor = '#38bdf8',    // シアンブルーのエナジークリスタル
   isSitting = false,
   isSpeaking = false,
+  voiceVolume = 0,
+  isShouting = false,
 }: AvatarModelProps) {
   const staffArmRef = useRef<THREE.Group>(null);
   const crystalRef = useRef<THREE.Mesh>(null);
   const crystalMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const beardRef = useRef<THREE.Group>(null);
+
+  const { groupRef, valuesRef } = useAvatarGimmick({
+    rarity: 'epic',
+    isSitting,
+    isSpeaking,
+    voiceVolume,
+    isShouting,
+  });
 
   const goldTrim = '#fbbf24';       // 金の縁取り
   const beardColor = '#f8fafc';     // 純白のひげ
@@ -29,9 +41,29 @@ export function VoxelWizardModel({
   // アニメーション処理 (60fps)
   useFrame((state) => {
     const t = state.clock.elapsedTime;
+    const isOverdrive = valuesRef.current.isOverdrive;
 
-    if (isSpeaking) {
-      // 杖を高く掲げる詠唱アニメーション
+    if (isOverdrive) {
+      // 大声・限界突破詠唱時: 杖を天高く掲げる
+      const staffLift = -1.45 + Math.sin(t * 16) * 0.1;
+      if (staffArmRef.current) {
+        staffArmRef.current.rotation.x = staffLift;
+        staffArmRef.current.rotation.z = -0.3;
+      }
+      // クリスタルの限界突破ストロボ発光
+      if (crystalMatRef.current) {
+        crystalMatRef.current.emissiveIntensity = 6.0 + Math.sin(t * 30) * 2.0;
+      }
+      if (crystalRef.current) {
+        crystalRef.current.rotation.y = t * 12;
+        crystalRef.current.rotation.x = t * 8;
+        crystalRef.current.scale.set(1.4, 1.4, 1.4);
+      }
+      if (beardRef.current) {
+        beardRef.current.rotation.x = -0.15 + Math.sin(t * 18) * 0.1;
+      }
+    } else if (isSpeaking) {
+      // 通常詠唱
       const staffLift = -0.7 + Math.sin(t * 6) * 0.12;
       const staffSway = Math.cos(t * 5) * 0.08;
       if (staffArmRef.current) {
@@ -39,17 +71,15 @@ export function VoxelWizardModel({
         staffArmRef.current.rotation.z = -0.15 + staffSway;
       }
 
-      // クリスタルの激しい青パルス発光 & 高速回転
-      const pulse = (Math.sin(t * 12) * 0.5 + 0.5) * 2.8 + 1.8;
+      const pulse = valuesRef.current.glowIntensity;
       if (crystalMatRef.current) {
         crystalMatRef.current.emissiveIntensity = pulse;
       }
       if (crystalRef.current) {
         crystalRef.current.rotation.y = t * 4;
         crystalRef.current.rotation.x = t * 2;
+        crystalRef.current.scale.set(1, 1, 1);
       }
-
-      // 詠唱に伴うひげの揺れ
       if (beardRef.current) {
         beardRef.current.rotation.x = Math.sin(t * 10) * 0.08;
       }
@@ -64,6 +94,7 @@ export function VoxelWizardModel({
       if (crystalRef.current) {
         crystalRef.current.rotation.y = t * 0.8;
         crystalRef.current.rotation.x = 0.3;
+        crystalRef.current.scale.set(1, 1, 1);
       }
       if (beardRef.current) {
         beardRef.current.rotation.x = 0;
@@ -72,7 +103,7 @@ export function VoxelWizardModel({
   });
 
   return (
-    <group>
+    <group ref={groupRef}>
       {/* 胴体 (Wizard Robe Upper) */}
       <mesh name="RobeTorso" castShadow position={[0, 0.44, 0]}>
         <boxGeometry args={[0.38, 0.36, 0.28]} />
@@ -321,11 +352,13 @@ export function VoxelWizardModel({
         </group>
       </group>
 
-      {/* レアリティ共通エフェクト */}
+      {/* レアリティ共通エフェクト (旋回光粒子・大声ストロボ閃光) */}
       <AvatarRarityEffects
         rarity="epic"
         isSpeaking={isSpeaking}
         isSitting={isSitting}
+        voiceVolume={voiceVolume}
+        isShouting={isShouting}
         accentColor={accentColor}
       />
     </group>

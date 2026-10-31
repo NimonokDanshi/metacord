@@ -25,6 +25,7 @@ interface DiscordStore {
   rawChannelData: any;
   logMessages: string[];
   speakingUserIds: Set<string>;
+  userVoiceVolumes: Record<string, number>;
   setUser: (user: DiscordUser | null) => void;
   setReady: (ready: boolean) => void;
   setInfo: (info: { instanceId: string; channelId: string | null; guildId: string | null }) => void;
@@ -36,6 +37,7 @@ interface DiscordStore {
   setRawChannelData: (data: any) => void;
   addLogMessage: (msg: string) => void;
   setSpeaking: (userId: string, isSpeaking: boolean) => void;
+  setVoiceVolume: (userId: string, volume: number) => void;
   syncEvents: SyncEvent[];
   addSyncEvent: (event: Omit<SyncEvent, 'id' | 'timestamp'>) => void;
   clearSyncEvents: () => void;
@@ -53,6 +55,7 @@ export const useDiscordStore = create<DiscordStore>((set) => ({
   rawChannelData: null,
   logMessages: [],
   speakingUserIds: new Set(),
+  userVoiceVolumes: {},
   setUser: (user) => set({ user }),
   setReady: (ready) => set({ isReady: ready }),
   setInfo: (info) => set({ ...info }),
@@ -86,6 +89,9 @@ export const useDiscordStore = create<DiscordStore>((set) => ({
     }
     return { speakingUserIds: next };
   }),
+  setVoiceVolume: (userId, volume) => set((state) => ({
+    userVoiceVolumes: { ...state.userVoiceVolumes, [userId]: volume }
+  })),
   syncEvents: [],
   addSyncEvent: (event) => set((state) => ({
     syncEvents: [

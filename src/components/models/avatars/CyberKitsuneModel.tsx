@@ -3,12 +3,14 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { AvatarModelProps } from '@/types/avatar';
 import { AvatarRarityEffects } from '@/components/models/avatars/common/AvatarRarityEffects';
+import { useAvatarGimmick } from '@/components/models/avatars/common/useAvatarGimmick';
 
 /**
  * CyberKitsuneModel (Legendary)
  * サイバー狐面、ネオンイヤー、サイバー羽織、そして優美にうねる2本の光るネオンテイルを備えた狐型サイボーグ
- * - 発言時 (isSpeaking = true): 狐面のネオンアイがブースト発光し、2本の尾が優美に大きくうねる
- * - 着席時 (isSitting = true): 足を折りたたみ、尾を体のサイドに流して着席
+ * - 通常発言時: 狐面のネオンアイがブースト発光し、2本の尾が優美に大きくうねる
+ * - 大声シャウト時 (OVERDRIVE): ネオンアイが限界突破発光、2本の尾が扇状に最大展開して超高速うねり、足元のメガ魔法陣が領域展開！
+ * - 着席時: 足を折りたたみ、尾を体のサイドに流して着席
  */
 export function CyberKitsuneModel({
   color = '#f8fafc',          // 白狐のサイバー装甲・羽織
@@ -16,6 +18,8 @@ export function CyberKitsuneModel({
   accentColor = '#00f0ff',    // ネオンシアン（エナジーライン & ネオンテイル先端）
   isSitting = false,
   isSpeaking = false,
+  voiceVolume = 0,
+  isShouting = false,
 }: AvatarModelProps) {
   const maskEyeMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const earTipMatRef = useRef<THREE.MeshStandardMaterial>(null);
@@ -26,16 +30,48 @@ export function CyberKitsuneModel({
   const rightEarRef = useRef<THREE.Group>(null);
   const leftEarRef = useRef<THREE.Group>(null);
 
+  const { groupRef, valuesRef } = useAvatarGimmick({
+    rarity: 'legendary',
+    isSitting,
+    isSpeaking,
+    voiceVolume,
+    isShouting,
+  });
+
   const neonRed = '#f43f5e';  // 隈取（くまどり）サイバーレッド
   const goldKnot = '#fbbf24'; // 帯留めゴールド
 
   // アニメーション処理 (60fps)
   useFrame((state) => {
     const t = state.clock.elapsedTime;
+    const isOverdrive = valuesRef.current.isOverdrive;
 
-    if (isSpeaking) {
-      // 狐面のネオンアイ・耳先のブースト発光
-      const boost = (Math.sin(t * 16) * 0.5 + 0.5) * 2.5 + 1.8;
+    if (isOverdrive) {
+      // 大声・限界突破時: ネオンアイが超絶発光＆尾が最大扇状展開
+      const boost = 5.0 + Math.sin(t * 30) * 2.0;
+      if (maskEyeMatRef.current) maskEyeMatRef.current.emissiveIntensity = boost;
+      if (earTipMatRef.current) earTipMatRef.current.emissiveIntensity = boost;
+
+      const earTwitch = Math.sin(t * 25) * 0.25;
+      if (rightEarRef.current) rightEarRef.current.rotation.z = -0.3 + earTwitch;
+      if (leftEarRef.current) leftEarRef.current.rotation.z = 0.3 - earTwitch;
+
+      const wave1 = Math.sin(t * 14) * 0.75;
+      const wave2 = Math.cos(t * 14) * 0.75;
+      if (tail1BaseRef.current) {
+        tail1BaseRef.current.rotation.y = 0.8 + wave1;
+        tail1BaseRef.current.rotation.x = 0.6 + Math.sin(t * 12) * 0.3;
+      }
+      if (tail1MidRef.current) tail1MidRef.current.rotation.y = 0.5 + wave1 * 0.6;
+
+      if (tail2BaseRef.current) {
+        tail2BaseRef.current.rotation.y = -0.8 - wave2;
+        tail2BaseRef.current.rotation.x = 0.6 + Math.cos(t * 12) * 0.3;
+      }
+      if (tail2MidRef.current) tail2MidRef.current.rotation.y = -0.5 - wave2 * 0.6;
+    } else if (isSpeaking) {
+      // 通常発言時
+      const boost = valuesRef.current.glowIntensity;
       if (maskEyeMatRef.current) maskEyeMatRef.current.emissiveIntensity = boost;
       if (earTipMatRef.current) earTipMatRef.current.emissiveIntensity = boost;
 
@@ -44,14 +80,13 @@ export function CyberKitsuneModel({
       if (rightEarRef.current) rightEarRef.current.rotation.z = -0.15 + earTwitch;
       if (leftEarRef.current) leftEarRef.current.rotation.z = 0.15 - earTwitch;
 
-      // 2本の尾のダイナミックかつ優美なうねり (位相を反転させて波打たせる)
+      // 2本の尾のダイナミックかつ優美なうねり
       const baseWave1 = Math.sin(t * 6) * 0.45;
       const baseWave2 = Math.cos(t * 6) * 0.45;
       const midWave1 = Math.sin(t * 6 + 1.2) * 0.35;
       const midWave2 = Math.cos(t * 6 + 1.2) * 0.35;
 
       if (isSitting) {
-        // 座席時はサイドに流しつつうねる
         if (tail1BaseRef.current) {
           tail1BaseRef.current.rotation.y = 0.8 + baseWave1 * 0.5;
           tail1BaseRef.current.rotation.x = -0.2 + Math.sin(t * 5) * 0.15;
@@ -64,7 +99,6 @@ export function CyberKitsuneModel({
         }
         if (tail2MidRef.current) tail2MidRef.current.rotation.y = -0.6 - midWave2 * 0.5;
       } else {
-        // 立位時のダイナミックなうねり
         if (tail1BaseRef.current) {
           tail1BaseRef.current.rotation.y = 0.3 + baseWave1;
           tail1BaseRef.current.rotation.x = 0.4 + Math.sin(t * 5) * 0.2;
@@ -78,7 +112,7 @@ export function CyberKitsuneModel({
         if (tail2MidRef.current) tail2MidRef.current.rotation.y = -0.2 - midWave2;
       }
     } else {
-      // 通常時 (優美なアイドルうねり)
+      // アイドル時
       if (maskEyeMatRef.current) maskEyeMatRef.current.emissiveIntensity = 1.2;
       if (earTipMatRef.current) earTipMatRef.current.emissiveIntensity = 1.2;
 
@@ -117,7 +151,7 @@ export function CyberKitsuneModel({
   });
 
   return (
-    <group>
+    <group ref={groupRef}>
       {/* 胴体インナー (Cyber Body Suit) */}
       <mesh name="Torso" castShadow position={[0, 0.40, 0]}>
         <boxGeometry args={[0.34, 0.42, 0.24]} />
@@ -502,11 +536,13 @@ export function CyberKitsuneModel({
         </group>
       )}
 
-      {/* レアリティ共通エフェクト */}
+      {/* レアリティ共通エフェクト (二重反転魔法陣・領域展開・エナジー光柱・ショックウェーブ) */}
       <AvatarRarityEffects
         rarity="legendary"
         isSpeaking={isSpeaking}
         isSitting={isSitting}
+        voiceVolume={voiceVolume}
+        isShouting={isShouting}
         accentColor={accentColor}
       />
     </group>

@@ -23,6 +23,8 @@ function GimmickViewport({
   component: ModelComponent,
   isSitting = false,
   isSpeaking = false,
+  voiceVolume = 0,
+  isShouting = false,
   autoRotate = false,
   zoom = 135,
   cameraPosition = [4.5, 3.5, 4.5],
@@ -30,6 +32,8 @@ function GimmickViewport({
   component: React.ComponentType<any>;
   isSitting?: boolean;
   isSpeaking?: boolean;
+  voiceVolume?: number;
+  isShouting?: boolean;
   autoRotate?: boolean;
   zoom?: number;
   cameraPosition?: [number, number, number];
@@ -43,12 +47,12 @@ function GimmickViewport({
         gl={{ antialias: true, alpha: true }}
       >
         {/* 全体を明るくする環境光 */}
-        <ambientLight intensity={1.8} />
+        <ambientLight intensity={isShouting ? 2.4 : 1.8} />
 
         {/* メイントップライト */}
         <directionalLight
           position={[4, 8, 4]}
-          intensity={2.2}
+          intensity={isShouting ? 3.0 : 2.2}
           castShadow
           shadow-mapSize={[512, 512]}
         />
@@ -56,19 +60,24 @@ function GimmickViewport({
         {/* 輪郭を際立たせるリムライト */}
         <directionalLight
           position={[-4, 5, -4]}
-          intensity={2.6}
-          color="#93c5fd"
+          intensity={isShouting ? 3.5 : 2.6}
+          color={isShouting ? '#ffffff' : '#93c5fd'}
         />
 
         <Suspense fallback={null}>
           <Center>
-            <ModelComponent isSitting={isSitting} isSpeaking={isSpeaking} />
+            <ModelComponent
+              isSitting={isSitting}
+              isSpeaking={isSpeaking}
+              voiceVolume={voiceVolume}
+              isShouting={isShouting}
+            />
           </Center>
           <OrbitControls
             enableZoom={false}
             enablePan={false}
             autoRotate={autoRotate}
-            autoRotateSpeed={2.0}
+            autoRotateSpeed={isShouting ? 3.0 : 2.0}
           />
         </Suspense>
       </Canvas>
@@ -78,8 +87,9 @@ function GimmickViewport({
 
 /**
  * AvatarDetailModal
- * モーダルを開いた瞬間に、レア度に応じたギミック枠（2〜4画面）が自動で同時に60FPS動作するマルチビューモーダル。
- * ユーザーのクリックやタブ切り替え操作は一切不要で、レア度が増えるほど豪華なギミック枠が同時に並びます。
+ * 開いた瞬間に、通常ポーズから「大声時の限界突破演出（OVERDRIVE / MAX ROAR）」までが
+ * レア度に応じたマルチビュー（2〜4画面）で同時に60FPS稼働する超迫力詳細モーダル。
+ * ユーザーのクリック操作は一切不要で、課金アバターの圧倒的な違いが一目で伝わります。
  */
 export function AvatarDetailModal({
   avatar,
@@ -126,7 +136,7 @@ export function AvatarDetailModal({
       >
         {/* ヘッダーバー */}
         <div className="flex items-center justify-between px-5 py-3.5 bg-slate-800/90 border-b border-slate-700">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <VoxelRarityBadge rarity={rarity} size="md" />
             <h2 className="text-lg md:text-xl font-black text-white uppercase tracking-tight">
               {avatar.name}
@@ -136,11 +146,11 @@ export function AvatarDetailModal({
                 💎 {avatar.monetization.priceLabel || 'PREMIUM'}
               </span>
             )}
-            <span className="hidden sm:inline-flex items-center ml-2 px-2 py-0.5 text-[9px] font-mono text-cyan-400 bg-cyan-950/80 border border-cyan-500/30">
-              {rarity === 'common' && '2 GIMMICKS'}
-              {rarity === 'rare' && '3 GIMMICKS'}
-              {rarity === 'epic' && '4 GIMMICKS (+NEON & PARTICLES)'}
-              {(rarity === 'legendary' || rarity === 'ultimate') && '4 GIMMICKS (+AURA & RUNES)'}
+            <span className="inline-flex items-center px-2 py-0.5 text-[9px] font-mono text-cyan-300 bg-cyan-950/80 border border-cyan-500/40 font-bold">
+              {rarity === 'common' && '⚡ 2 GIMMICKS (STAND & SIT)'}
+              {rarity === 'rare' && '⚡ 3 GIMMICKS (+VOICE REACTION)'}
+              {rarity === 'epic' && '🔥 4 GIMMICKS (+MAX SHOUT OVERDRIVE)'}
+              {(rarity === 'legendary' || rarity === 'ultimate') && '👑 4 GIMMICKS (+MAX ROAR & TERRITORY)'}
             </span>
           </div>
           {/* 閉じるボタン */}
@@ -204,16 +214,16 @@ export function AvatarDetailModal({
             </div>
           </div>
 
-          {/* 枠 3: ボイス反応ギミック (VOICE ACTION) - Rare以上 */}
+          {/* 枠 3: ボイス反応ギミック (VOICE TALK) - Rare以上 */}
           {rarity !== 'common' && (
             <div className="relative flex flex-col bg-[radial-gradient(circle_at_center,_#064e3b_0%,_#022c22_60%,_#02120e_100%)] border border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.2)] overflow-hidden group">
               <div className="px-3 py-2 bg-emerald-950/90 border-b border-emerald-500/40 flex items-center justify-between">
                 <span className="text-xs font-black tracking-wider text-emerald-200 uppercase flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  🎙️ VOICE ACTION
+                  🎙️ VOICE TALK
                 </span>
                 <span className="text-[9px] font-bold text-emerald-300 bg-emerald-900/80 px-1.5 py-0.5 rounded border border-emerald-500/30">
-                  LIVE 60FPS
+                  NORMAL TALK
                 </span>
               </div>
               <div className="h-56 md:h-64 relative">
@@ -221,28 +231,30 @@ export function AvatarDetailModal({
                   component={ModelComponent}
                   isSitting={false}
                   isSpeaking={true}
+                  voiceVolume={0.4}
+                  isShouting={false}
                   autoRotate={false}
                   zoom={zoomLevel}
                 />
               </div>
               <div className="p-2.5 bg-slate-900/90 border-t border-emerald-500/30 text-center">
                 <p className="text-xs text-emerald-300 font-bold">
-                  発言連動の身体フィジカルアクション
+                  通常会話時のリアクション
                 </p>
               </div>
             </div>
           )}
 
-          {/* 枠 4 (Epic): ネオン発光＆旋回光粒子 (NEON & PARTICLES) */}
+          {/* 枠 4 (Epic): 大声時の限界突破 (MAX SHOUT: OVERDRIVE) */}
           {rarity === 'epic' && (
-            <div className="relative flex flex-col bg-[radial-gradient(circle_at_center,_#581c87_0%,_#3b0764_60%,_#090514_100%)] border border-purple-500/60 shadow-[0_0_24px_rgba(168,85,247,0.3)] overflow-hidden group">
-              <div className="px-3 py-2 bg-purple-950/90 border-b border-purple-500/40 flex items-center justify-between">
-                <span className="text-xs font-black tracking-wider text-purple-200 uppercase flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
-                  ✨ NEON & FX
+            <div className="relative flex flex-col bg-[radial-gradient(circle_at_center,_#701a75_0%,_#4a044e_60%,_#120114_100%)] border-2 border-fuchsia-400/80 shadow-[0_0_32px_rgba(217,70,239,0.45)] overflow-hidden group">
+              <div className="px-3 py-2 bg-fuchsia-950/90 border-b border-fuchsia-400/60 flex items-center justify-between">
+                <span className="text-xs font-black tracking-wider text-fuchsia-100 uppercase flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-fuchsia-400 animate-ping" />
+                  ⚡ OVERDRIVE
                 </span>
-                <span className="text-[9px] font-bold text-purple-300 bg-purple-900/80 px-1.5 py-0.5 rounded border border-purple-500/30">
-                  EPIC FX
+                <span className="text-[9px] font-black text-black bg-gradient-to-r from-fuchsia-300 to-amber-300 px-2 py-0.5 rounded shadow-sm">
+                  MAX SHOUT!
                 </span>
               </div>
               <div className="h-56 md:h-64 relative">
@@ -250,28 +262,30 @@ export function AvatarDetailModal({
                   component={ModelComponent}
                   isSitting={false}
                   isSpeaking={true}
+                  voiceVolume={1.0}
+                  isShouting={true}
                   autoRotate={true}
-                  zoom={zoomLevel - 10}
+                  zoom={zoomLevel - 15}
                 />
               </div>
-              <div className="p-2.5 bg-slate-900/90 border-t border-purple-500/30 text-center">
-                <p className="text-xs text-purple-200 font-bold">
-                  ネオンパルス発光 ＆ 旋回する光粒子
+              <div className="p-2.5 bg-slate-900/95 border-t border-fuchsia-500/50 text-center">
+                <p className="text-xs text-fuchsia-200 font-black">
+                  大声時: 杖を天に掲げ雷光ストロボ＆光粒子嵐！
                 </p>
               </div>
             </div>
           )}
 
-          {/* 枠 4 (Legendary / Ultimate): 魔法陣オーラ＆全開エナジー (AURA & RUNES) */}
+          {/* 枠 4 (Legendary / Ultimate): 大声咆哮＆部屋全体領域展開 (MAX ROAR & TERRITORY) */}
           {(rarity === 'legendary' || rarity === 'ultimate') && (
-            <div className="relative flex flex-col bg-[radial-gradient(circle_at_center,_#831843_0%,_#4c0519_60%,_#14020a_100%)] border border-amber-500/60 shadow-[0_0_28px_rgba(245,158,11,0.3)] overflow-hidden group">
-              <div className="px-3 py-2 bg-rose-950/90 border-b border-amber-500/40 flex items-center justify-between">
-                <span className="text-xs font-black tracking-wider text-amber-200 uppercase flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                  🌀 AURA RUNE
+            <div className="relative flex flex-col bg-[radial-gradient(circle_at_center,_#831843_0%,_#3b0764_60%,_#0a0114_100%)] border-2 border-amber-400 shadow-[0_0_40px_rgba(245,158,11,0.5)] overflow-hidden group">
+              <div className="px-3 py-2 bg-gradient-to-r from-amber-950 via-rose-950 to-purple-950 border-b border-amber-400/70 flex items-center justify-between">
+                <span className="text-xs font-black tracking-wider text-amber-200 uppercase flex items-center gap-1.5 drop-shadow-[0_0_8px_#f59e0b]">
+                  <span className="w-3 h-3 rounded-full bg-amber-300 animate-ping" />
+                  🌋 ROAR & TERRITORY
                 </span>
-                <span className="text-[9px] font-bold text-amber-300 bg-amber-900/80 px-1.5 py-0.5 rounded border border-amber-500/30">
-                  MAX FX
+                <span className="text-[9px] font-black text-black bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 px-2.5 py-0.5 rounded shadow-[0_0_12px_#f59e0b]">
+                  MAX ROAR!
                 </span>
               </div>
               <div className="h-56 md:h-64 relative">
@@ -279,14 +293,16 @@ export function AvatarDetailModal({
                   component={ModelComponent}
                   isSitting={false}
                   isSpeaking={true}
+                  voiceVolume={1.0}
+                  isShouting={true}
                   autoRotate={true}
-                  zoom={zoomLevel - 20}
-                  cameraPosition={[4.0, 5.0, 4.0]}
+                  zoom={95}
+                  cameraPosition={[3.6, 3.8, 3.6]}
                 />
               </div>
-              <div className="p-2.5 bg-slate-900/90 border-t border-amber-500/30 text-center">
-                <p className="text-xs text-amber-200 font-bold">
-                  二重反転魔法陣 ＆ フルオーラ展開
+              <div className="p-2.5 bg-slate-900/95 border-t border-amber-500/60 text-center">
+                <p className="text-xs text-amber-300 font-black tracking-wide">
+                  大声時: 咆哮ビーム放射・巨大翼展開・床全体メガ魔法陣！
                 </p>
               </div>
             </div>

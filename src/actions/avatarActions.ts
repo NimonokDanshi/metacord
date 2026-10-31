@@ -51,7 +51,10 @@ export function useAvatarLogic(occupant: SeatOccupant, voiceState?: VoiceState) 
   
   // Discord SDK からのリアルタイム発言状態を取得
   const speakingUserIds = useDiscordStore(s => s.speakingUserIds);
+  const userVoiceVolumes = useDiscordStore(s => s.userVoiceVolumes);
   const isSpeaking = speakingUserIds.has(occupant.user_id);
+  const voiceVolume = userVoiceVolumes[occupant.user_id] ?? (isSpeaking ? 0.5 : 0);
+  const isShouting = isSpeaking && voiceVolume > 0.6;
  
   // アニメーションと同期
   useFrame((state) => {
@@ -63,11 +66,11 @@ export function useAvatarLogic(occupant: SeatOccupant, voiceState?: VoiceState) 
       // 基本の呼吸モーション
       let targetY = pos.y + Math.sin(state.clock.elapsedTime * 1.5) * 0.02;
  
-      // 喋っている時のジャンプモーション (Rich Aesthetics)
+      // 喋っている時のジャンプモーション (大声時はさらに大きくバウンド)
       if (isSpeaking) {
-        targetY += Math.abs(Math.sin(state.clock.elapsedTime * 10)) * 0.15;
-        // 喋っている時は少し体を揺らす
-        groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 20) * 0.05;
+        const jumpAmp = isShouting ? 0.28 : 0.15;
+        targetY += Math.abs(Math.sin(state.clock.elapsedTime * (isShouting ? 16 : 10))) * jumpAmp;
+        groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * (isShouting ? 30 : 20)) * (isShouting ? 0.09 : 0.05);
       } else {
         groupRef.current.rotation.z = 0;
       }
@@ -85,8 +88,9 @@ export function useAvatarLogic(occupant: SeatOccupant, voiceState?: VoiceState) 
     isMuted,
     isDeaf,
     isSpeaking,
+    voiceVolume,
+    isShouting,
     displayName: occupant.display_name,
     avatarUrl: occupant.avatar_url,
   };
 }
-

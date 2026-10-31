@@ -11,27 +11,44 @@ interface Props {
 }
 
 export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
-  const { groupRef, pos, isMuted, isDeaf, isSpeaking, displayName, avatarUrl } = useAvatarLogic(occupant, voiceState);
+  const {
+    groupRef,
+    pos,
+    isMuted,
+    isDeaf,
+    isSpeaking,
+    voiceVolume,
+    isShouting,
+    displayName,
+    avatarUrl,
+  } = useAvatarLogic(occupant, voiceState);
 
   if (!pos || isNaN(pos.x) || isNaN(pos.z)) {
     return null;
   }
 
   const isSitting = !!occupant.furniture_id;
-  // 角や耳が高いアバター (Dragon, Bunny) は頭上マージンを大きく確保
-  const isTallAvatar = occupant.avatar_type === 'mecha-dragon' || occupant.avatar_type === 'cyber-bunny';
+  // 角や耳が高いアバター (Dragon, Bunny, Kitsune) は頭上マージンを大きく確保
+  const isTallAvatar =
+    occupant.avatar_type === 'mecha-dragon' ||
+    occupant.avatar_type === 'cyber-bunny' ||
+    occupant.avatar_type === 'cyber-kitsune';
   const hudY = isSitting 
-    ? (isTallAvatar ? 1.3 : 1.15) 
-    : (isTallAvatar ? 1.5 : 1.35);
+    ? (isTallAvatar ? 1.35 : 1.15) 
+    : (isTallAvatar ? 1.55 : 1.35);
 
   return (
     <group ref={groupRef} position={[pos.x, pos.y, pos.z]}>
-      {/* アバターの外見（子要素として注入し、ボイス発言状態を透過的に伝播） */}
+      {/* アバターの外見（子要素として注入し、ボイス発言状態・音量・シャウトを透過的に伝播） */}
       {React.isValidElement(children)
-        ? React.cloneElement(children as React.ReactElement<any>, { isSpeaking })
+        ? React.cloneElement(children as React.ReactElement<any>, {
+            isSpeaking,
+            voiceVolume,
+            isShouting,
+          })
         : children}
  
-      {/* 2.5D HUD: カメラのズームイン・ズームアウトに連動してアバターと同じ比率で拡縮する transform / sprite 設定 */}
+      {/* 2.5D HUD: カメラのズームイン・ズームアウトに連動してアバターと同じ比率で拡縮 */}
       <Html
         position={[0, hudY, 0]}
         center
@@ -45,12 +62,22 @@ export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
         <div className="flex flex-col items-center gap-1.5 transform-gpu">
           {/* プロフィールアイコン */}
           <div className="relative">
-            {/* Speaking Ring */}
-            {isSpeaking && (
+            {/* Speaking / Shouting Ring */}
+            {isShouting ? (
+              <div className="absolute inset-0 -m-2 rounded-full border-2 border-amber-400 animate-ping opacity-90 shadow-[0_0_16px_#f59e0b]" />
+            ) : isSpeaking ? (
               <div className="absolute inset-0 -m-1.5 rounded-full border-2 border-green-400 animate-ping opacity-75" />
-            )}
+            ) : null}
             
-            <div className={`w-9 h-9 rounded-full border-2 ${isSpeaking ? 'border-green-400 shadow-[0_0_12px_#4ade80]' : isMuted ? 'border-red-500' : 'border-white'} overflow-hidden shadow-lg bg-[#2c3e50] transition-colors`}>
+            <div className={`w-9 h-9 rounded-full border-2 ${
+              isShouting
+                ? 'border-amber-400 shadow-[0_0_16px_#f59e0b]'
+                : isSpeaking
+                ? 'border-green-400 shadow-[0_0_12px_#4ade80]'
+                : isMuted
+                ? 'border-red-500'
+                : 'border-white'
+            } overflow-hidden shadow-lg bg-[#2c3e50] transition-colors`}>
               <img
                 src={avatarUrl || ''}
                 alt=""
@@ -70,8 +97,18 @@ export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
             )}
           </div>
           {/* 名前タグ */}
-          <div className={`flex items-center gap-1.5 ${isSpeaking ? 'bg-green-600/90' : 'bg-black/85'} text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-md transition-colors border border-white/10`}>
-            {isSpeaking && <span className="animate-pulse">🔊</span>}
+          <div className={`flex items-center gap-1.5 ${
+            isShouting
+              ? 'bg-gradient-to-r from-amber-600 to-rose-600 font-black shadow-[0_0_12px_#f59e0b]'
+              : isSpeaking
+              ? 'bg-green-600/90 font-bold'
+              : 'bg-black/85 font-medium'
+          } text-white text-[11px] px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-md transition-colors border border-white/10`}>
+            {isShouting ? (
+              <span className="animate-bounce">🔥</span>
+            ) : isSpeaking ? (
+              <span className="animate-pulse">🔊</span>
+            ) : null}
             {displayName}
           </div>
         </div>

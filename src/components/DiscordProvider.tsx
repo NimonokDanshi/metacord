@@ -8,10 +8,12 @@ import { supabase } from '@/utils/supabase';
 import { AvatarType } from '@/types/room';
 import { parseMySet } from '@/utils/userMetadataUtil';
 import { monetizationActions } from '@/actions/monetizationActions';
+import { useMicrophoneVolume } from '@/hooks/useMicrophoneVolume';
 
 import DebugOverlay from './DebugOverlay';
 
 export default function DiscordProvider({ children }: { children: React.ReactNode }) {
+  useMicrophoneVolume();
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const {

@@ -33,6 +33,12 @@ export interface AvatarModelProps {
   isSitting?: boolean;
   /** 発言中フラグ (ボイス連動アニメーション等に使用) */
   isSpeaking?: boolean;
+  /** 声の音量・熱量 (0.0 ~ 1.0) */
+  voiceVolume?: number;
+  /** 大声・シャウト・限界突破フラグ (voiceVolume > 0.6 または詳細プレビュー時) */
+  isShouting?: boolean;
+  /** 連続発言秒数 */
+  speakingDuration?: number;
 }
 
 /**
