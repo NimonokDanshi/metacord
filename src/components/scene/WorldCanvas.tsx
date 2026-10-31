@@ -121,7 +121,7 @@ export function WorldCanvas() {
   }, [occupants, voiceStates, furnitures, user, avatarType, mySet]);
 
   return (
-    <div className="relative w-full h-full bg-[#1a1a2e]">
+    <div className="relative w-full h-full bg-[radial-gradient(ellipse_at_top,_#1e293b_0%,_#0f172a_55%,_#050811_100%)]">
       {/* UI Overlay */}
       <div className="absolute top-6 right-6 z-[50] flex flex-col gap-4 items-end">
         <button
