@@ -6,6 +6,10 @@ import { ShibaDogModel } from '@/components/models/avatars/ShibaDogModel';
 import { MechaDragonModel } from '@/components/models/avatars/MechaDragonModel';
 import { ChubbyChickModel } from '@/components/models/avatars/ChubbyChickModel';
 import { BaristaBearModel } from '@/components/models/avatars/BaristaBearModel';
+import { GentlemanPenguinModel } from '@/components/models/avatars/GentlemanPenguinModel';
+import { RetroCosmoBotModel } from '@/components/models/avatars/RetroCosmoBotModel';
+import { VoxelWizardModel } from '@/components/models/avatars/VoxelWizardModel';
+import { CyberKitsuneModel } from '@/components/models/avatars/CyberKitsuneModel';
 import { AvatarMetadata, AvatarModelProps, AvatarRarity } from '@/types/avatar';
 import { AvatarType } from '@/types/room';
 
@@ -75,6 +79,30 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
     component: PenguinModel
   },
   {
+    id: 'gentleman-penguin',
+    name: 'Gentleman Penguin',
+    description: 'An elegant penguin gentleman with a top hat, gold monocle, red bow tie, and wooden cane.',
+    rarity: 'rare',
+    features: [
+      'シルクハット、片眼鏡、蝶ネクタイ、ステッキを装備した英国紳士',
+      '発言時: くちばしが開き、ステッキを小粋にタップ、翼をパタパタ動かす',
+      '着席時: 黄色い足を前方に揃えて優雅に着席'
+    ],
+    component: GentlemanPenguinModel
+  },
+  {
+    id: 'retro-cosmo-bot',
+    name: 'Retro Cosmo Bot',
+    description: 'A vintage astronaut robot equipped with a domed glass visor, instrument chest, and pulse antenna.',
+    rarity: 'rare',
+    features: [
+      'レトロ宇宙服、ガラスバイザー、背面酸素ボンベ、胸部計器パネル',
+      '発言時: 頭上のアンテナ赤ランプが高速点滅し、ピコピコ上下ステップ',
+      '着席時: 脚を前方に曲げて着席'
+    ],
+    component: RetroCosmoBotModel
+  },
+  {
     id: 'cat',
     name: 'Gray Tabby',
     description: 'A cool gray cat in voxel art.',
@@ -104,6 +132,24 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
     }
   },
   {
+    id: 'voxel-wizard',
+    name: 'Voxel Wizard',
+    description: 'An apprentice wizard in golden-trimmed deep purple robes with a pointed hat and glowing crystal wand.',
+    rarity: 'epic',
+    features: [
+      'とんがり帽子、豊かな白髭、金縁ローブ、エナジークリスタルの杖',
+      '発言時: 杖を掲げて詠唱モーション、クリスタルが青くパルス発光 ＆ 浮遊魔法粒子',
+      '着席時: ローブの裾を広げて着席'
+    ],
+    component: VoxelWizardModel,
+    monetization: {
+      isPremium: true,
+      skuId: 'sku_voxel_wizard',
+      priceLabel: '$1.99',
+      requiredTier: 'pro'
+    }
+  },
+  {
     id: 'mecha-dragon',
     name: 'Mecha Dragon',
     description: 'Armored metallic dragon with radiant golden energy horns and wings.',
@@ -118,6 +164,25 @@ export const AVATAR_REGISTRY: AvatarMetadata[] = [
     monetization: {
       isPremium: true,
       skuId: 'sku_mecha_dragon',
+      priceLabel: '$2.99',
+      requiredTier: 'pro'
+    }
+  },
+  {
+    id: 'cyber-kitsune',
+    name: 'Cyber Kitsune',
+    description: 'A cybernetic mystical white kitsune with neon Fox mask, holographic ears, and dual luminous energy tails.',
+    rarity: 'legendary',
+    features: [
+      'サイバー狐面、隈取ライン、ホログラム立ち耳、2本のネオンテイル',
+      '常時待機: 背後に浮かぶ二重反転サイバーオーラリング ＆ 神秘的な浮遊',
+      '発言時: 狐面のネオンアイがブースト発光 ＆ 2本の尾が優美にサイン波でうねる',
+      '着席時: 尾をサイドに流して静かに着席'
+    ],
+    component: CyberKitsuneModel,
+    monetization: {
+      isPremium: true,
+      skuId: 'sku_cyber_kitsune',
       priceLabel: '$2.99',
       requiredTier: 'pro'
     }
