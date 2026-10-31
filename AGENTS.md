@@ -21,3 +21,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 4. **No `as any` Workarounds**  
    Do not use `as any` to suppress Supabase type errors. If a type error occurs, fix the underlying `database.ts` definition to match the DB.  
    (Supabase の型エラーを `as any` で回避せず、根本原因である `database.ts` を修正します。)
+
+# Git & Commit Rules
+
+1. **Japanese Commit Messages**  
+   Gitのコミットメッセージは必ず**日本語**で記述すること。  
+   プレフィックス（`feat:`, `fix:`, `refactor:`, `style:`, `docs:` など）を付与する場合でも、それに続く説明文は日本語で具体的かつ簡潔に記載してください。
+
