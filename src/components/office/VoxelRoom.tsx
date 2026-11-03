@@ -2,6 +2,9 @@ import React from 'react';
 import { GRID_SIZE_X, GRID_SIZE_Z, VOXEL_SIZE } from '@/constants/voxel';
 import { MetaCordLogo } from '@/components/models/parts/MetaCordLogo';
 import { useDiscordStore } from '@/stores/discordStore';
+import { useRoomStore } from '@/stores/roomStore';
+import { roomActions } from '@/actions/roomActions';
+import { ROOM_ITEMS } from '@/constants/roomItems';
 
 /**
  * VoxelRoom (スターターオフィス)
@@ -12,6 +15,34 @@ import { useDiscordStore } from '@/stores/discordStore';
 export function VoxelRoom() {
   const speakingUserIds = useDiscordStore((s) => s.speakingUserIds);
   const isAnyoneSpeaking = speakingUserIds.size > 0;
+  const { isEditing, furnitures } = useRoomStore();
+
+  // 家具が配置されているマス（当たり判定）をセットアップ
+  const occupiedGridCells = React.useMemo(() => {
+    const set = new Set<string>();
+    furnitures.forEach(f => {
+      const item = ROOM_ITEMS.find(it => it.id === f.item_id);
+      const sX = item?.sizeX ?? 1;
+      const sZ = item?.sizeZ ?? 1;
+      for (let dx = 0; dx < sX; dx++) {
+        for (let dz = 0; dz < sZ; dz++) {
+          set.add(`${f.pos_x + dx}-${f.pos_z + dz}`);
+        }
+      }
+    });
+    return set;
+  }, [furnitures]);
+
+  const handleTileClick = (x: number, z: number, e: any) => {
+    if (isEditing) return;
+    // 家具が上に置かれているマスは家具のクリックに任せる
+    if (occupiedGridCells.has(`${x}-${z}`)) return;
+
+    e.stopPropagation();
+    const targetSeatIdx = z * GRID_SIZE_X + x;
+    console.log('[VoxelRoom] Floor clicked, moving to seat:', targetSeatIdx);
+    roomActions.changeSeat(targetSeatIdx, null);
+  };
 
   const tiles = [];
 
@@ -33,6 +64,7 @@ export function VoxelRoom() {
           key={`${x}-${z}`}
           position={[posX, -0.05, posZ]}
           receiveShadow
+          onClick={(e) => handleTileClick(x, z, e)}
         >
           <boxGeometry args={[VOXEL_SIZE * 0.98, 0.1, VOXEL_SIZE * 0.98]} />
           <meshStandardMaterial color={color} roughness={0.85} />
