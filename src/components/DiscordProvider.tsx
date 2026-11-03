@@ -224,6 +224,7 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
           if (discordSdk.channelId) {
             await fetchChannelData();
 
+            // ボイスチャンネルの参加者変更を検知するハンドラ
             handleVoiceStateUpdate = (event: any) => {
               const username = event.user?.global_name || event.user?.username || 'Unknown';
               log(`[VoiceEvent] ${username} -> Channel: ${event.channel_id}`);
@@ -232,8 +233,12 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
                 updateVoiceState(event);
               } else {
                 log(`[VoiceEvent] Removing user ${username} from view`);
-                removeVoiceState(event.user.id);
+                if (event.user?.id) {
+                  removeVoiceState(event.user.id);
+                }
               }
+              // 即座にチャンネルデータ全体を再取得して整合性を担保
+              fetchChannelData();
             };
 
             discordSdk.subscribe('VOICE_STATE_UPDATE', handleVoiceStateUpdate, { 
@@ -257,6 +262,12 @@ export default function DiscordProvider({ children }: { children: React.ReactNod
               log(`[SpeakingEvent] STOP: ${user_id}`);
               useDiscordStore.getState().setSpeaking(user_id, false);
             }, { channel_id: discordSdk.channelId });
+
+            // ★ボイスチャンネルの入退室を確実に拾うための定期ポーリング（2.5秒ごと）
+            // （Metacord未起動のメンバーが通話に入ってきた/抜けた場合も確実に同期）
+            pollInterval = setInterval(() => {
+              fetchChannelData();
+            }, 2500);
           }
         } catch (authError: any) {
           log('Discord認証スキップ（ローカルブラウザ）:', authError.message);
