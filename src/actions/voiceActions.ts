@@ -61,6 +61,16 @@ export function useVoiceCommand() {
       // 'aborted' は停止時によく出るので無視、'no-speech' も頻繁に出るので無視
       if (event.error === 'aborted' || event.error === 'no-speech') return;
       console.error('[VoiceCommand] Error:', event.error);
+
+      // マイク権限が拒否された（iframe制限など）場合は無限ループを防ぐため即時停止
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        isListeningRef.current = false;
+        try {
+          recognition.stop();
+        } catch {
+          // 無視
+        }
+      }
     };
  
     recognition.onend = () => {

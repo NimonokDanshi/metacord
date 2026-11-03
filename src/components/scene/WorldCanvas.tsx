@@ -207,16 +207,19 @@ export function WorldCanvas() {
         {/* Unrailed! 風の固定カメラ視点 (正投影) */}
         <OrthographicCamera
           makeDefault
-          position={[10, 10, 10]}
+          position={[10, 10.8, 10]}
           zoom={50}
           near={0.1}
           far={1000}
         />
         
         <OrbitControls 
+          target={[0, 0.8, 0]}
           enablePan={false} 
           enableRotate={true}
           maxPolarAngle={Math.PI / 2.1} 
+          minZoom={25}
+          maxZoom={120}
           enabled={!isEditing}
         />
 
