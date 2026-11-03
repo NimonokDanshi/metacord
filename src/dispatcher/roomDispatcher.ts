@@ -60,6 +60,9 @@ export function useRoom() {
     setOccupants,
     upsertOccupant,
     removeOccupant,
+    startLeavingAnimation,
+    setUserEmote,
+    addToast,
     setMySeatIndex,
     setMyFurnitureId,
     setConnected,
@@ -81,7 +84,13 @@ export function useRoom() {
     presenceServiceRef.current = presenceService;
     setPresenceService(presenceService);
 
-    // --- Presence イベントハンドラの定義 (Dispatcher の役割) ---
+    // ウィンドウ終了時の即時退出通知
+    const handleBeforeUnload = () => {
+      presenceService.broadcastInstantLeave();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // --- Presence & Broadcast イベントハンドラの定義 (Dispatcher の役割) ---
     const handlers = {
       onSync: (state: Record<string, PresencePayload[]>) => {
         console.log('[useRoom] Presence Sync');
@@ -96,13 +105,21 @@ export function useRoom() {
       onJoin: (payloads: PresencePayload[]) => {
         console.log('[useRoom] User Joined:', payloads);
         useDiscordStore.getState().addSyncEvent({ type: 'PRESENCE', label: 'onJoin', payload: payloads });
-        payloads.forEach(p => upsertOccupant({ ...p }));
+        payloads.forEach(p => {
+          if (p.user_id !== user.id) {
+            addToast(`${p.display_name || 'メンバー'} が入室しました`, 'join');
+          }
+          upsertOccupant({ ...p });
+        });
       },
       onLeave: (payloads: PresencePayload[]) => {
         console.log('[useRoom] User Left:', payloads);
         useDiscordStore.getState().addSyncEvent({ type: 'PRESENCE', label: 'onLeave', payload: payloads });
         payloads.forEach(async (p) => {
-          removeOccupant(p.user_id);
+          startLeavingAnimation(p.user_id);
+          if (p.user_id !== user.id) {
+            addToast(`${p.display_name || 'メンバー'} が退室しました`, 'leave');
+          }
           
           // 退室したユーザーが占有していた家具があればメタデータをクリア
           if (supabase) {
@@ -112,6 +129,33 @@ export function useRoom() {
               .eq('metadata->>occupant_id', p.user_id);
           }
         });
+      },
+      // --- Broadcast: 音量リアルタイム同期 ---
+      onVoiceVolume: ({ userId, volume }: { userId: string; volume: number }) => {
+        useDiscordStore.getState().setVoiceVolume(userId, volume);
+        if (volume > 0.05) {
+          useDiscordStore.getState().setSpeaking(userId, true);
+        }
+      },
+      // --- Broadcast: エモート同期 ---
+      onEmote: ({ userId, emote }: { userId: string; emote: string }) => {
+        setUserEmote(userId, emote);
+      },
+      // --- Broadcast: 即時退室通知 ---
+      onUserInstantLeave: ({ userId }: { userId: string }) => {
+        console.log('[useRoom] Instant Leave Broadcast:', userId);
+        const target = useRoomStore.getState().occupants.get(userId);
+        if (target && userId !== user.id) {
+          addToast(`${target.display_name || 'メンバー'} が退室しました`, 'leave');
+        }
+        startLeavingAnimation(userId);
+      },
+      // --- Broadcast: 即時入室通知 ---
+      onUserInstantJoin: ({ userId, displayName }: { userId: string; displayName?: string }) => {
+        console.log('[useRoom] Instant Join Broadcast:', userId);
+        if (userId !== user.id) {
+          addToast(`${displayName || 'メンバー'} が入室しました`, 'join');
+        }
       }
     };
 
@@ -191,6 +235,10 @@ export function useRoom() {
 
           // 自分の座席を確定し、DB/Presence 両方に同期
           roomActions.changeSeat(seatInfo.seat_index, seatInfo.furniture_id || null);
+
+          // 即時入室をブロードキャスト通知
+          const myDisplayName = user.global_name ?? user.username;
+          presenceService.broadcastInstantJoin(myDisplayName, getDiscordAvatarUrl(user) || undefined);
         }
       }
 
@@ -219,6 +267,7 @@ export function useRoom() {
 
     return () => {
       console.log('[useRoom] Cleaning up connection');
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       setConnected(false);
       setMySeatIndex(null);
       setMyFurnitureId(null);
@@ -226,6 +275,7 @@ export function useRoom() {
       
       if (presenceServiceRef.current) {
         const pService = presenceServiceRef.current;
+        pService.broadcastInstantLeave();
         const fChan = (pService as any)._furnitureChannel;
         if (fChan && supabase) {
           supabase.removeChannel(fChan);
@@ -236,4 +286,3 @@ export function useRoom() {
     };
   }, [user, instanceId, channelId]);
 }
-

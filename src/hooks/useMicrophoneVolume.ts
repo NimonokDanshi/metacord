@@ -1,11 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { useDiscordStore } from '@/stores/discordStore';
+import { useRoomStore } from '@/stores/roomStore';
 
 /**
  * useMicrophoneVolume
  * Web Audio API を活用し、ユーザー自身のマイク音量 (RMS: 0.0 ~ 1.0) をリアルタイム測定して
- * discordStore の userVoiceVolumes に同期するフック。
- * 大声シャウト (> 0.6) を検知してアバターの限界突破・咆哮ギミックを発動させます。
+ * discordStore の userVoiceVolumes に同期するとともに、Supabase Broadcast 経由で
+ * 同じボイスチャンネルの全参加者に超低遅延ブロードキャストするフック。
+ * 
+ * これにより、大声シャウト (> 0.6) によるアバターの限界突破・咆哮・オーラ演出が
+ * 全員の見ている画面で完全に同期して描画されます。
  */
 export function useMicrophoneVolume() {
   const user = useDiscordStore((s) => s.user);
@@ -14,6 +18,8 @@ export function useMicrophoneVolume() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const lastBroadcastTimeRef = useRef<number>(0);
+  const lastSentVolumeRef = useRef<number>(0);
 
   useEffect(() => {
     if (!user || !user.id) return;
@@ -69,7 +75,27 @@ export function useMicrophoneVolume() {
           // 非線形ブースト (声の大きさにメリハリをつける)
           const boostedVolume = Math.min(1.0, Math.pow(rms * 2.8, 1.4));
 
+          // ローカルストアの更新
           setVoiceVolume(currentUserId, boostedVolume);
+
+          // --- リアルタイム・ブロードキャスト配信 (約60msスロットル) ---
+          const now = Date.now();
+          const pService = useRoomStore.getState().presenceService;
+          const isSilent = boostedVolume < 0.05;
+          const wasSilent = lastSentVolumeRef.current < 0.05;
+
+          // 発言中、または無音に切り替わった瞬間に送信
+          if (pService) {
+            if (!isSilent && (now - lastBroadcastTimeRef.current > 60 || Math.abs(boostedVolume - lastSentVolumeRef.current) > 0.2)) {
+              pService.broadcastVoiceVolume(boostedVolume);
+              lastBroadcastTimeRef.current = now;
+              lastSentVolumeRef.current = boostedVolume;
+            } else if (isSilent && !wasSilent) {
+              pService.broadcastVoiceVolume(0);
+              lastBroadcastTimeRef.current = now;
+              lastSentVolumeRef.current = 0;
+            }
+          }
 
           animationFrameRef.current = requestAnimationFrame(checkVolume);
         };
@@ -93,6 +119,11 @@ export function useMicrophoneVolume() {
       }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
+      }
+      // クリーンアップ時に無音送信
+      const pService = useRoomStore.getState().presenceService;
+      if (pService) {
+        pService.broadcastVoiceVolume(0);
       }
     };
   }, [user?.id, setVoiceVolume]);

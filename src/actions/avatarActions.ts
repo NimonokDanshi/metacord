@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useVoxelGrid } from '@/utils/voxelGrid';
@@ -9,13 +9,17 @@ import { HEIGHT_MEMBER_SITTING, HEIGHT_MEMBER_STANDING } from '@/constants/voxel
 import type { SeatOccupant } from '@/types/room';
 import type { VoiceState } from '@/types/discord';
 
-export function useAvatarLogic(occupant: SeatOccupant, voiceState?: VoiceState) {
+export function useAvatarLogic(
+  occupant: SeatOccupant, 
+  voiceState?: VoiceState,
+  isLeaving: boolean = false
+) {
   const { getPositionFromSeat, getWorldFromGrid } = useVoxelGrid();
-  const { furnitures } = useRoomStore();
+  const { furnitures, userEmotes, finishLeavingAnimation } = useRoomStore();
   const groupRef = useRef<THREE.Group>(null);
 
-  // 座席座標の計算
-  const pos = useMemo(() => {
+  // 座席座標の計算 (目標座標)
+  const targetPos = useMemo(() => {
     // 1. 家具に紐付いている場合
     if (occupant.furniture_id) {
       const furniture = furnitures.find(f => f.id === occupant.furniture_id);
@@ -25,7 +29,6 @@ export function useAvatarLogic(occupant: SeatOccupant, voiceState?: VoiceState) 
         
         if (item?.seatOffset) {
           const { x, y, z } = item.seatOffset;
-          // 家具の回転に合わせてオフセットを計算
           const offset = new THREE.Vector3(x, y, z);
           offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), furniture.rotation);
           
@@ -45,6 +48,24 @@ export function useAvatarLogic(occupant: SeatOccupant, voiceState?: VoiceState) 
     return { ...gridPos, rotation: 0 };
   }, [occupant, furnitures, getWorldFromGrid, getPositionFromSeat]);
 
+  // 現在の補間座標（Lerp 用）
+  const currentPosRef = useRef<{ x: number; y: number; z: number; rotation: number }>({
+    x: targetPos.x,
+    y: targetPos.y,
+    z: targetPos.z,
+    rotation: targetPos.rotation,
+  });
+
+  // スポーンアニメーション進行度 (0 -> 1)
+  const spawnTimerRef = useRef<number>(0);
+  const [spawnEffectActive, setSpawnEffectActive] = useState(true);
+
+  // デスポーンアニメーション進行度 (0 -> 1)
+  const leaveTimerRef = useRef<number>(0);
+
+  // 移動中フラグ
+  const isMovingRef = useRef<boolean>(false);
+
   // ミュート・デフ状態の判定
   const isMuted = voiceState?.voice_state?.self_mute || voiceState?.mute;
   const isDeaf = voiceState?.voice_state?.self_deaf || voiceState?.voice_state?.deaf;
@@ -55,41 +76,113 @@ export function useAvatarLogic(occupant: SeatOccupant, voiceState?: VoiceState) 
   const isSpeaking = speakingUserIds.has(occupant.user_id);
   const voiceVolume = userVoiceVolumes[occupant.user_id] ?? (isSpeaking ? 0.5 : 0);
   const isShouting = isSpeaking && voiceVolume > 0.6;
- 
-  // アニメーションと同期
-  useFrame((state) => {
-    if (groupRef.current && pos) {
-      // 位置の更新
-      groupRef.current.position.x = pos.x;
-      groupRef.current.position.z = pos.z;
- 
-      // 基本の呼吸モーション
-      let targetY = pos.y + Math.sin(state.clock.elapsedTime * 1.5) * 0.02;
- 
+
+  // 最新エモートの取得（3.5秒以内）
+  const latestEmoteData = userEmotes[occupant.user_id];
+  const activeEmote = (latestEmoteData && (Date.now() - latestEmoteData.timestamp < 3500))
+    ? latestEmoteData.emote
+    : null;
+
+  // アニメーションと同期 (Lerp補間・スポーン・デスポーン・発言バウンド)
+  useFrame((state, delta) => {
+    if (!groupRef.current || !targetPos) return;
+
+    // --- 1. デスポーン演出 (退室中) ---
+    if (isLeaving) {
+      leaveTimerRef.current += delta * 1.5; // 約0.7秒で完了
+      const t = Math.min(1, leaveTimerRef.current);
+      
+      // 上空へ昇天しつつ縮小・消散
+      groupRef.current.position.y += delta * 3.5;
+      const scale = Math.max(0, 1 - t);
+      groupRef.current.scale.set(scale, scale, scale);
+      groupRef.current.rotation.y += delta * 8; // 高速スピン
+
+      if (t >= 1) {
+        finishLeavingAnimation(occupant.user_id);
+      }
+      return;
+    }
+
+    // --- 2. スポーン演出 (登場時バウンド着地) ---
+    if (spawnTimerRef.current < 1) {
+      spawnTimerRef.current += delta * 1.8; // 約0.55秒で着地
+      const t = Math.min(1, spawnTimerRef.current);
+      // イージングバウンド効果 (上空2.5から落ちてきてポヨンと着地)
+      const dropOffset = (1 - t) * (1 - t) * 2.5 + Math.sin(t * Math.PI) * 0.2;
+      currentPosRef.current.y = targetPos.y + dropOffset;
+      const initialScale = Math.min(1, t * 1.2);
+      groupRef.current.scale.set(initialScale, initialScale, initialScale);
+
+      if (t >= 1) {
+        setSpawnEffectActive(false);
+      }
+    } else {
+      groupRef.current.scale.set(1, 1, 1);
+    }
+
+    // --- 3. 水平移動の滑らかな補間 (Lerp) ---
+    const dx = targetPos.x - currentPosRef.current.x;
+    const dz = targetPos.z - currentPosRef.current.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+
+    const lerpSpeed = Math.min(1, delta * 7); // 滑らかな追従
+    currentPosRef.current.x = THREE.MathUtils.lerp(currentPosRef.current.x, targetPos.x, lerpSpeed);
+    currentPosRef.current.z = THREE.MathUtils.lerp(currentPosRef.current.z, targetPos.z, lerpSpeed);
+
+    // 0.05以上離れていれば移動中と判定
+    if (dist > 0.05) {
+      isMovingRef.current = true;
+      // 進行方向を向く
+      const moveAngle = Math.atan2(dx, dz);
+      currentPosRef.current.rotation = THREE.MathUtils.lerp(currentPosRef.current.rotation, moveAngle, delta * 10);
+    } else {
+      isMovingRef.current = false;
+      // 目的地に到達したら目標の家具・座席の向きへ戻る
+      currentPosRef.current.rotation = THREE.MathUtils.lerp(currentPosRef.current.rotation, targetPos.rotation, delta * 6);
+    }
+
+    // 座標適用
+    groupRef.current.position.x = currentPosRef.current.x;
+    groupRef.current.position.z = currentPosRef.current.z;
+    groupRef.current.rotation.y = currentPosRef.current.rotation;
+
+    // --- 4. モーション計算 (歩行ピッチング / 呼吸 / 発言ジャンプ) ---
+    let targetY = targetPos.y;
+
+    if (spawnTimerRef.current < 1) {
+      targetY = currentPosRef.current.y;
+    } else if (isMovingRef.current) {
+      // 歩行中：トコトコと足踏みピッチング
+      targetY += Math.abs(Math.sin(state.clock.elapsedTime * 14)) * 0.12;
+      groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 14) * 0.08;
+    } else {
+      // 待機時の微呼吸
+      targetY += Math.sin(state.clock.elapsedTime * 1.5) * 0.02;
+
       // 喋っている時のジャンプモーション (大声時はさらに大きくバウンド)
       if (isSpeaking) {
-        const jumpAmp = isShouting ? 0.28 : 0.15;
-        targetY += Math.abs(Math.sin(state.clock.elapsedTime * (isShouting ? 16 : 10))) * jumpAmp;
-        groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * (isShouting ? 30 : 20)) * (isShouting ? 0.09 : 0.05);
+        const jumpAmp = isShouting ? 0.32 : 0.15;
+        targetY += Math.abs(Math.sin(state.clock.elapsedTime * (isShouting ? 18 : 10))) * jumpAmp;
+        groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * (isShouting ? 32 : 20)) * (isShouting ? 0.1 : 0.05);
       } else {
         groupRef.current.rotation.z = 0;
       }
- 
-      groupRef.current.position.y = targetY;
-      
-      // 向きの更新
-      groupRef.current.rotation.y = pos.rotation;
     }
+
+    groupRef.current.position.y = targetY;
   });
 
   return {
     groupRef,
-    pos,
+    pos: targetPos,
     isMuted,
     isDeaf,
     isSpeaking,
     voiceVolume,
     isShouting,
+    activeEmote,
+    isLeaving,
     displayName: occupant.display_name,
     avatarUrl: occupant.avatar_url,
   };

@@ -4,9 +4,22 @@ import { Furniture } from '@/types/furniture';
 import { PresenceService } from '@/utils/presenceUtils';
 import { ROOM_ITEMS } from '@/constants/roomItems';
 
+interface RoomToast {
+  id: string;
+  message: string;
+  type: 'join' | 'leave' | 'info';
+  timestamp: number;
+}
+
 interface RoomStore {
   /** 現在の在室者リスト（user_id → SeatOccupant） */
   occupants: Map<string, SeatOccupant>;
+  /** 退室演出中の在室者リスト（user_id → { occupant, leavingStartedAt }） */
+  leavingOccupants: Map<string, { occupant: SeatOccupant; leavingStartedAt: number }>;
+  /** ユーザーごとの最新エモート（user_id → { emote, timestamp }） */
+  userEmotes: Record<string, { emote: string; timestamp: number }>;
+  /** 入退室などのトースト通知リスト */
+  toasts: RoomToast[];
 
   /** 自分自身のseat_index（未着席は null） */
   mySeatIndex: number | null;
@@ -26,6 +39,18 @@ interface RoomStore {
 
   /** 1人分の着席情報を削除する（Presence leave時） */
   removeOccupant: (userId: string) => void;
+
+  /** 退室アニメーションを開始する */
+  startLeavingAnimation: (userId: string) => void;
+  /** 退室アニメーション終了後に完全削除 */
+  finishLeavingAnimation: (userId: string) => void;
+
+  /** エモートをセット */
+  setUserEmote: (userId: string, emote: string) => void;
+  /** トーストを追加 */
+  addToast: (message: string, type?: 'join' | 'leave' | 'info') => void;
+  /** トーストを削除 */
+  removeToast: (id: string) => void;
 
   /** 自分のseat_indexをセット */
   setMySeatIndex: (index: number | null) => void;
@@ -83,6 +108,9 @@ interface RoomStore {
 
 export const useRoomStore = create<RoomStore>((set, get) => ({
   occupants: new Map(),
+  leavingOccupants: new Map(),
+  userEmotes: {},
+  toasts: [],
   mySeatIndex: null,
   myFurnitureId: null,
   isConnected: false,
@@ -104,7 +132,12 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     set((state) => {
       const next = new Map(state.occupants);
       next.set(occupant.user_id, occupant);
-      return { occupants: next };
+      // 退室リストに存在していた場合は復活
+      const nextLeaving = new Map(state.leavingOccupants);
+      if (nextLeaving.has(occupant.user_id)) {
+        nextLeaving.delete(occupant.user_id);
+      }
+      return { occupants: next, leavingOccupants: nextLeaving };
     }),
 
   removeOccupant: (userId) =>
@@ -113,6 +146,48 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
       next.delete(userId);
       return { occupants: next };
     }),
+
+  startLeavingAnimation: (userId) =>
+    set((state) => {
+      const occupant = state.occupants.get(userId);
+      if (!occupant) return state;
+
+      const nextOccupants = new Map(state.occupants);
+      nextOccupants.delete(userId);
+
+      const nextLeaving = new Map(state.leavingOccupants);
+      nextLeaving.set(userId, { occupant, leavingStartedAt: Date.now() });
+
+      return { occupants: nextOccupants, leavingOccupants: nextLeaving };
+    }),
+
+  finishLeavingAnimation: (userId) =>
+    set((state) => {
+      const nextLeaving = new Map(state.leavingOccupants);
+      nextLeaving.delete(userId);
+      return { leavingOccupants: nextLeaving };
+    }),
+
+  setUserEmote: (userId, emote) =>
+    set((state) => ({
+      userEmotes: {
+        ...state.userEmotes,
+        [userId]: { emote, timestamp: Date.now() }
+      }
+    })),
+
+  addToast: (message, type = 'info') =>
+    set((state) => {
+      const id = Math.random().toString(36).substring(2, 9);
+      const newToast: RoomToast = { id, message, type, timestamp: Date.now() };
+      // 最大3件まで表示
+      return { toasts: [...state.toasts.slice(-2), newToast] };
+    }),
+
+  removeToast: (id) =>
+    set((state) => ({
+      toasts: state.toasts.filter((t) => t.id !== id)
+    })),
 
   setMySeatIndex: (index) => set({ mySeatIndex: index }),
   setMyFurnitureId: (id) => set({ myFurnitureId: id }),

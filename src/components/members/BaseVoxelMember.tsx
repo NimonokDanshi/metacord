@@ -7,10 +7,11 @@ import type { VoiceState } from '@/types/discord';
 interface Props {
   occupant: SeatOccupant;
   voiceState?: VoiceState;
+  isLeaving?: boolean;
   children: React.ReactNode;
 }
 
-export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
+export function BaseVoxelMember({ occupant, voiceState, isLeaving = false, children }: Props) {
   const {
     groupRef,
     pos,
@@ -19,9 +20,10 @@ export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
     isSpeaking,
     voiceVolume,
     isShouting,
+    activeEmote,
     displayName,
     avatarUrl,
-  } = useAvatarLogic(occupant, voiceState);
+  } = useAvatarLogic(occupant, voiceState, isLeaving);
 
   if (!pos || isNaN(pos.x) || isNaN(pos.z)) {
     return null;
@@ -56,10 +58,21 @@ export function BaseVoxelMember({ occupant, voiceState, children }: Props) {
         sprite
         scale={0.28}
         occlude={false}
-        className="pointer-events-none select-none"
+        className={`pointer-events-none select-none transition-opacity duration-300 ${isLeaving ? 'opacity-0' : 'opacity-100'}`}
         zIndexRange={[100, 0]}
       >
         <div className="flex flex-col items-center gap-1.5 transform-gpu">
+          {/* エモート吹き出し (存在する場合にポップアップ表示) */}
+          {activeEmote && (
+            <div className="animate-bounce mb-1">
+              <div className="bg-slate-900/95 border-2 border-yellow-400 px-3 py-1 rounded-2xl shadow-[0_0_15px_rgba(250,204,21,0.6)] flex items-center justify-center transform -translate-y-1">
+                <span className="text-2xl filter drop-shadow">{activeEmote}</span>
+              </div>
+              {/* 吹き出しの三角のしっぽ */}
+              <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-yellow-400 mx-auto -mt-0.5" />
+            </div>
+          )}
+
           {/* プロフィールアイコン */}
           <div className="relative">
             {/* Speaking / Shouting Ring */}

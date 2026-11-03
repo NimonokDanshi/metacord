@@ -7,20 +7,21 @@ import type { VoiceState } from '@/types/discord';
 interface Props {
   occupant: SeatOccupant;
   voiceState?: VoiceState;
+  isLeaving?: boolean;
 }
 
 /**
  * VoxelMember (Facade)
  * プロジェクト標準のアトラスやポーズを選択して、アバターを組み立てる。
  */
-export function VoxelMember({ occupant, voiceState }: Props) {
+export function VoxelMember({ occupant, voiceState, isLeaving = false }: Props) {
   // レジストリからモデルコンポーネントを取得
   const AvatarModel = getAvatarComponent(occupant.avatar_type);
 
   const isSitting = !!occupant.furniture_id;
   
   return (
-    <BaseVoxelMember occupant={occupant} voiceState={voiceState}>
+    <BaseVoxelMember occupant={occupant} voiceState={voiceState} isLeaving={isLeaving}>
       <AvatarModel isSitting={isSitting} />
     </BaseVoxelMember>
   );
