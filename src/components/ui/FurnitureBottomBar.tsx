@@ -4,6 +4,8 @@ import React from 'react';
 import { useRoomStore } from '@/stores/roomStore';
 import { ROOM_ITEMS, ROOM_CATEGORIES } from '@/constants/roomItems';
 import { FurniturePreview } from './FurniturePreview';
+import { RARITY_CONFIG } from '@/constants/rarity';
+import { VoxelRarityBadge } from './VoxelRarityBadge';
 
 export function FurnitureBottomBar() {
   const { 
@@ -65,17 +67,34 @@ export function FurnitureBottomBar() {
             {filteredItems.length > 0 ? (
               filteredItems.map((item) => {
                 const isSelected = selectedItemId === item.id;
+                const rarity = item.rarity || 'common';
+                const rarityConfig = RARITY_CONFIG[rarity];
+
                 return (
                   <button
                     key={item.id}
                     onClick={() => setSelectedItem(isSelected ? null : item.id)}
                     className={`
-                      relative flex-shrink-0 w-32 h-32 border-4 transition-all duration-200 group flex flex-col
+                      relative flex-shrink-0 w-32 h-32 border-4 transition-all duration-200 group flex flex-col overflow-hidden
                       ${isSelected 
-                        ? 'border-[#4cc9f0] bg-[#4cc9f0]/20 scale-105 shadow-[0_0_20px_#4cc9f0]/60' 
-                        : 'border-[#4361ee]/40 bg-[radial-gradient(circle_at_center,_#334155_0%,_#1e293b_60%,_#090d16_100%)] hover:border-[#4cc9f0]/60 hover:scale-102'}
+                        ? 'scale-105 shadow-[0_0_20px_rgba(76,201,240,0.6)]' 
+                        : 'hover:scale-102'}
+                      bg-[radial-gradient(circle_at_center,_#334155_0%,_#1e293b_60%,_#090d16_100%)]
                     `}
+                    style={{
+                      borderColor: isSelected ? '#4cc9f0' : (rarityConfig ? rarityConfig.color : '#4361ee'),
+                      boxShadow: isSelected 
+                        ? `0 0 20px ${rarityConfig ? rarityConfig.color : '#4cc9f0'}` 
+                        : (rarity !== 'common' ? `0 0 10px ${rarityConfig.color}40` : undefined),
+                    }}
                   >
+                    {/* レアリティバッジ */}
+                    {item.rarity && (
+                      <div className="absolute top-1.5 left-1.5 z-10">
+                        <VoxelRarityBadge rarity={item.rarity} size="sm" showLabel={false} />
+                      </div>
+                    )}
+
                     {/* 3D Model Preview */}
                     <div className="w-full flex-1 flex items-center justify-center p-1 overflow-hidden">
                       <FurniturePreview item={item} />
@@ -85,7 +104,11 @@ export function FurnitureBottomBar() {
                     <div className={`
                       w-full py-1 transition-colors border-t border-black/20
                       ${isSelected ? 'bg-[#4cc9f0]' : 'bg-[#4361ee]/90 group-hover:bg-[#4361ee]'}
-                    `}>
+                    `}
+                    style={!isSelected && rarity !== 'common' ? {
+                      backgroundColor: `${rarityConfig.color}cc`,
+                    } : undefined}
+                    >
                       <span className="text-[9px] text-white font-black truncate block px-1 uppercase tracking-tighter text-center">
                         {item.name}
                       </span>
@@ -93,8 +116,8 @@ export function FurnitureBottomBar() {
 
                     {/* Selection Marker */}
                     {isSelected && (
-                      <div className="absolute -top-2.5 -right-2.5 w-6 h-6 bg-[#4cc9f0] border-2 border-white flex items-center justify-center shadow-lg">
-                        <span className="text-white text-xs font-black">✓</span>
+                      <div className="absolute top-1.5 right-1.5 z-10 w-5 h-5 bg-[#4cc9f0] border-2 border-white flex items-center justify-center shadow-lg">
+                        <span className="text-white text-[10px] font-black">✓</span>
                       </div>
                     )}
                   </button>

@@ -7,6 +7,8 @@ import { JapandiChair } from '@/components/models/chair/JapandiChair';
 import { Wall } from '@/components/models/wall/Wall';
 import { Floor } from '@/components/models/floor/Floor';
 import { PottedPlant } from '@/components/models/furniture/PottedPlant';
+import { CyberWorkstation } from '@/components/models/desk/CyberWorkstation';
+import { RocketGamingChair } from '@/components/models/chair/RocketGamingChair';
 import { FurnitureModelProps } from '@/types/furniture';
 
 export interface FurnitureRegistryEntry {
@@ -43,6 +45,12 @@ export const FURNITURE_REGISTRY: Record<string, FurnitureRegistryEntry> = {
   },
   Floor: {
     component: Floor as unknown as React.ComponentType<FurnitureModelProps>,
+  },
+  CyberWorkstation: {
+    component: CyberWorkstation as unknown as React.ComponentType<FurnitureModelProps>,
+  },
+  RocketGamingChair: {
+    component: RocketGamingChair as unknown as React.ComponentType<FurnitureModelProps>,
   },
 };
 

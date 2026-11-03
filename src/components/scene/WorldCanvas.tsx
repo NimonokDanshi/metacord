@@ -19,6 +19,7 @@ import { VoxelModal } from '../ui/VoxelModal';
 import { AvatarSelector } from '../ui/AvatarSelector';
 import { FurnitureBottomBar } from '@/components/ui/FurnitureBottomBar';
 import { PlacementPreview } from '@/components/scene/PlacementPreview';
+import { DramaticCameraController } from '@/components/scene/DramaticCameraController';
 import { MySetSelector } from '../ui/MySetSelector';
 import { useVoiceCommand } from '@/actions/voiceActions';
 import { VoiceStatusIndicator } from '../ui/VoiceStatusIndicator';
@@ -222,6 +223,9 @@ export function WorldCanvas() {
           maxZoom={120}
           enabled={!isEditing}
         />
+
+        {/* 大声・シャウト・Legendary家具発動時のドラマチック自動ズーム */}
+        <DramaticCameraController />
 
         {/* ライティング */}
         <ambientLight intensity={0.8} />

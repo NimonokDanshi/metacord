@@ -3,6 +3,7 @@
 import React from 'react';
 import { RoomItem, ROOM_ITEMS } from '@/constants/roomItems';
 import { useRoomStore } from '@/stores/roomStore';
+import { useDiscordStore } from '@/stores/discordStore';
 import { parseMySet } from '@/utils/userMetadataUtil';
 import { getFurnitureEntry } from '@/constants/furnitureRegistry';
 
@@ -30,16 +31,29 @@ export function DynamicFurniture({
   rotation = 0,
   metadata
 }: DynamicFurnitureProps) {
-  const { setEditing, setSelectedItem, setMovingFurnitureId, setPreviewRotation } = useRoomStore();
+  const { setEditing, setSelectedItem, setMovingFurnitureId, setPreviewRotation, occupants } = useRoomStore();
+  const speakingUserIds = useDiscordStore(s => s.speakingUserIds);
+  const userVoiceVolumes = useDiscordStore(s => s.userVoiceVolumes);
   const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
 
   // 透明度の適用
   const isPreview = opacity < 1;
 
-  // メタデータから着席ユーザー情報を取得
-  const occupantId = metadata?.occupant_id;
-  const occupantMySet = metadata?.myset ? parseMySet(metadata.myset) : null;
-  const isOccupied = !!occupantId;
+  // 着席ユーザー情報の取得 (metadata または Presence の occupants から)
+  const currentOccupant = id 
+    ? Array.from(occupants.values()).find(occ => occ.furniture_id === id) 
+    : null;
+  const actualOccupantId = metadata?.occupant_id || (currentOccupant ? String(currentOccupant.user_id) : undefined);
+  const isOccupied = !!actualOccupantId;
+
+  // MySet 情報の取得
+  const rawMySet = metadata?.myset || currentOccupant?.metadata?.myset;
+  const occupantMySet = rawMySet ? parseMySet(rawMySet) : null;
+
+  // 着席者のボイス連動状態
+  const isSpeaking = actualOccupantId ? speakingUserIds.has(actualOccupantId) : false;
+  const voiceVolume = actualOccupantId ? (userVoiceVolumes[actualOccupantId] ?? (isSpeaking ? 0.5 : 0)) : 0;
+  const isShouting = isSpeaking && voiceVolume > 0.6;
 
   const handlePointerDown = (e: any) => {
     if (isPreview || !id) return;
@@ -91,6 +105,11 @@ export function DynamicFurniture({
           isOccupied={isOccupied}
           occupantMySet={occupantMySet}
           opacity={opacity}
+          colorOverride={colorOverride}
+          isSpeaking={isSpeaking}
+          voiceVolume={voiceVolume}
+          isShouting={isShouting}
+          occupantId={actualOccupantId}
         />
       )}
 

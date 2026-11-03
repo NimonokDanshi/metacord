@@ -1,3 +1,5 @@
+import { AvatarRarity } from '@/types/avatar';
+
 export type ItemType = 'desk' | 'chair' | 'furniture' | 'wall' | 'floor' | 'background' | 'lighting';
 
 export interface RoomCategory {
@@ -24,6 +26,7 @@ export interface RoomItem {
   isSeat: boolean;
   thumbnailUrl?: string;
   modelComponent: string; // DynamicFurniture で利用するコンポーネント名
+  rarity?: AvatarRarity;
   /** 
    * 座席の基準点からの相対オフセット 
    * x, z: グリッド単位のオフセット
@@ -46,11 +49,28 @@ export const ROOM_ITEMS: RoomItem[] = [
     sizeZ: 2,
     isSeat: true,
     modelComponent: 'Workstation',
+    rarity: 'common',
     seatOffset: {
       x: 0.5,
       y: 0,
       z: 1.25,
       rotation: Math.PI, // デスクに向き合うように (180度)
+    },
+  },
+  {
+    id: 'cyber-desk',
+    name: 'サイバー・コックピット',
+    type: 'desk',
+    sizeX: 2,
+    sizeZ: 2,
+    isSeat: true,
+    modelComponent: 'CyberWorkstation',
+    rarity: 'legendary',
+    seatOffset: {
+      x: 0.5,
+      y: 0,
+      z: 1.2,
+      rotation: Math.PI,
     },
   },
   {
@@ -61,6 +81,7 @@ export const ROOM_ITEMS: RoomItem[] = [
     sizeZ: 2,
     isSeat: true,
     modelComponent: 'JapandiWorkstation',
+    rarity: 'rare',
     seatOffset: {
       x: 0.5,
       y: 0,
@@ -76,6 +97,7 @@ export const ROOM_ITEMS: RoomItem[] = [
     sizeZ: 1,
     isSeat: true,
     modelComponent: 'Chair',
+    rarity: 'common',
     seatOffset: {
       x: 0,
       y: 0,
@@ -91,6 +113,23 @@ export const ROOM_ITEMS: RoomItem[] = [
     sizeZ: 1,
     isSeat: true,
     modelComponent: 'JapandiChair',
+    rarity: 'rare',
+    seatOffset: {
+      x: 0,
+      y: 0,
+      z: 0,
+      rotation: 0,
+    },
+  },
+  {
+    id: 'rocket-chair',
+    name: 'ロケットゲーミングチェア',
+    type: 'chair',
+    sizeX: 1,
+    sizeZ: 1,
+    isSeat: true,
+    modelComponent: 'RocketGamingChair',
+    rarity: 'legendary',
     seatOffset: {
       x: 0,
       y: 0,
@@ -106,6 +145,7 @@ export const ROOM_ITEMS: RoomItem[] = [
     sizeZ: 1,
     isSeat: false,
     modelComponent: 'PottedPlant',
+    rarity: 'rare',
   },
   // 以下、空のカテゴリー確認用プレースホルダ
   {
@@ -116,6 +156,7 @@ export const ROOM_ITEMS: RoomItem[] = [
     sizeZ: 1,
     isSeat: false,
     modelComponent: 'Wall',
+    rarity: 'common',
   },
   {
     id: 'sample-floor',
@@ -125,5 +166,6 @@ export const ROOM_ITEMS: RoomItem[] = [
     sizeZ: 1,
     isSeat: false,
     modelComponent: 'Floor',
+    rarity: 'common',
   },
 ];

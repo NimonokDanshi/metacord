@@ -66,6 +66,9 @@ export function useAvatarLogic(
   // 移動中フラグ
   const isMovingRef = useRef<boolean>(false);
 
+  // Legendary/ロケット家具用の浮上同期オフセット
+  const rocketHoverOffsetRef = useRef<number>(0);
+
   // ミュート・デフ状態の判定
   const isMuted = voiceState?.voice_state?.self_mute || voiceState?.mute;
   const isDeaf = voiceState?.voice_state?.self_deaf || voiceState?.voice_state?.deaf;
@@ -147,8 +150,25 @@ export function useAvatarLogic(
     groupRef.current.position.z = currentPosRef.current.z;
     groupRef.current.rotation.y = currentPosRef.current.rotation;
 
-    // --- 4. モーション計算 (歩行ピッチング / 呼吸 / 発言ジャンプ) ---
+    // --- 4. モーション計算 (歩行ピッチング / 呼吸 / 発言ジャンプ / ロケット浮上連動) ---
     let targetY = targetPos.y;
+
+    // 着席家具が Legendary またはロケットギミックを持つか判定
+    const seatedFurniture = occupant.furniture_id ? furnitures.find(f => f.id === occupant.furniture_id) : null;
+    const seatedItem = seatedFurniture ? ROOM_ITEMS.find(it => it.id === seatedFurniture.item_id) : null;
+    const isRocketFurniture = seatedItem?.rarity === 'legendary' || seatedItem?.id === 'cyber-desk' || seatedItem?.id === 'rocket-chair';
+
+    if (isRocketFurniture) {
+      const targetRocketLift = isShouting ? 1.25 : (isSpeaking ? 0.08 : 0);
+      rocketHoverOffsetRef.current = THREE.MathUtils.lerp(
+        rocketHoverOffsetRef.current,
+        targetRocketLift,
+        delta * (isShouting ? 8 : 6)
+      );
+      targetY += rocketHoverOffsetRef.current;
+    } else {
+      rocketHoverOffsetRef.current = 0;
+    }
 
     if (spawnTimerRef.current < 1) {
       targetY = currentPosRef.current.y;

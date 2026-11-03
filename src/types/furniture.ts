@@ -22,4 +22,12 @@ export interface FurnitureModelProps {
   occupantMySet?: any;
   colorOverride?: string;
   opacity?: number;
+  /** 着席者の発話状態 (ボイス連動) */
+  isSpeaking?: boolean;
+  /** 着席者の声の音量 (0.0 ~ 1.0) */
+  voiceVolume?: number;
+  /** 着席者の大声・シャウト判定 */
+  isShouting?: boolean;
+  /** 着席者のユーザーID */
+  occupantId?: string;
 }
