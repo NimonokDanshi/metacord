@@ -48,8 +48,12 @@ export function DynamicFurniture({
   const user = useDiscordStore(s => s.user);
   const speakingUserIds = useDiscordStore(s => s.speakingUserIds);
   const userVoiceVolumes = useDiscordStore(s => s.userVoiceVolumes);
+  
+  // タップ・クリック判定用の参照 (マウスオーバーやドラッグ回転での誤動作を完全防止)
+  const pointerDownPosRef = React.useRef<{ x: number; y: number } | null>(null);
+  const isPointerDownRef = React.useRef<boolean>(false);
   const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
-  const isLongPressRef = React.useRef<boolean>(false);
+  const isLongPressTriggeredRef = React.useRef<boolean>(false);
 
   // 透明度の適用
   const isPreview = opacity < 1;
@@ -77,11 +81,19 @@ export function DynamicFurniture({
   const handlePointerDown = (e: any) => {
     if (isPreview || !id) return;
     e.stopPropagation();
-    isLongPressRef.current = false;
+
+    isPointerDownRef.current = true;
+    isLongPressTriggeredRef.current = false;
+    // 押下位置を記録 (ドラッグ操作と短押しクリックを判別)
+    pointerDownPosRef.current = {
+      x: e.clientX ?? e.nativeEvent?.clientX ?? 0,
+      y: e.clientY ?? e.nativeEvent?.clientY ?? 0,
+    };
     
     // 0.5秒長押しで編集モード
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
     longPressTimer.current = setTimeout(() => {
-      isLongPressRef.current = true;
+      isLongPressTriggeredRef.current = true;
       console.log('[DynamicFurniture] Long press detected:', id);
       setEditing(true);
       setSelectedItem(item.id);
@@ -90,15 +102,35 @@ export function DynamicFurniture({
     }, 500);
   };
 
-  const handlePointerUp = (e?: any) => {
+  const handlePointerUp = (e: any) => {
+    // 押下状態でない場合は即終了 (マウスが通過しただけの誤発火を100%遮断)
+    if (!isPointerDownRef.current) return;
+    isPointerDownRef.current = false;
+
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
 
-    // 長押しではなく短押し（タップ/クリック）かつ非編集モードの場合: 座席移動！
-    if (!isLongPressRef.current && !isEditing && id && item.isSeat) {
-      if (e) e.stopPropagation();
+    // 長押しモードが発火した場合は座席移動しない
+    if (isLongPressTriggeredRef.current) {
+      isLongPressTriggeredRef.current = false;
+      return;
+    }
+
+    // カメラ回転ドラッグ等でポインタが一定以上動いた場合はクリックとみなさない
+    const currentX = e.clientX ?? e.nativeEvent?.clientX ?? 0;
+    const currentY = e.clientY ?? e.nativeEvent?.clientY ?? 0;
+    if (pointerDownPosRef.current) {
+      const dist = Math.hypot(currentX - pointerDownPosRef.current.x, currentY - pointerDownPosRef.current.y);
+      if (dist > 8) {
+        return; // カメラドラッグ移動と判定
+      }
+    }
+
+    // 正真正銘の「短押しタップ / クリック」で座席移動
+    if (!isEditing && id && item.isSeat) {
+      e.stopPropagation();
 
       // 既に自分が座っている場合
       if (myFurnitureId === id) return;
@@ -112,10 +144,21 @@ export function DynamicFurniture({
 
       // 空いている座席へ移動
       const targetSeatIdx = (gridZ ?? 0) * GRID_SIZE_X + (gridX ?? 0);
-      console.log('[DynamicFurniture] Moving to seat:', { furnitureId: id, seatIdx: targetSeatIdx });
+      console.log('[DynamicFurniture] Clicked to move to seat:', { furnitureId: id, seatIdx: targetSeatIdx });
       roomActions.changeSeat(targetSeatIdx, id);
       addToast(`${item.name} に座席を移動しました`, 'join');
     }
+  };
+
+  // マウスが外に出た時は状態をリセットするのみ（移動処理は絶対に呼ばない）
+  const handlePointerLeave = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    isPointerDownRef.current = false;
+    isLongPressTriggeredRef.current = false;
+    pointerDownPosRef.current = null;
   };
 
   // MySet による着席中の家具差し替え判定
@@ -132,27 +175,12 @@ export function DynamicFurniture({
     ? registryEntry.occupiedComponent 
     : registryEntry?.component;
 
-  const handlePointerOver = (e: any) => {
-    if (!isPreview && !isEditing && item.isSeat) {
-      document.body.style.cursor = 'pointer';
-    }
-  };
-
-  const handlePointerOut = () => {
-    document.body.style.cursor = 'auto';
-  };
-
   return (
     <group 
       rotation={[0, rotation, 0]} 
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
-      onPointerLeave={(e) => {
-        handlePointerUp();
-        handlePointerOut();
-      }}
-      onPointerOver={handlePointerOver}
-      onPointerOut={handlePointerOut}
+      onPointerLeave={handlePointerLeave}
     >
       {/* レジストリから取得した家具モデルを描画 */}
       {ModelComponent && (
