@@ -14,26 +14,43 @@ export function ShibaDogModel({
   skinColor = '#fdfbf7',      // お腹・頬・足先の白毛 (ウラジロ)
   isSitting = false,
   isSpeaking = false,
+  voiceVolume = 0,
+  isShouting = false,
 }: AvatarModelProps) {
   const rightEarRef = useRef<THREE.Group>(null);
   const leftEarRef = useRef<THREE.Group>(null);
   const tailRef = useRef<THREE.Group>(null);
 
+  const isOverdrive = isShouting || (isSpeaking && voiceVolume > 0.5);
+
   // 毎フレームのアニメーション処理 (60fps)
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     if (isSpeaking) {
-      // 喋っている時は耳が素早くパタパタ動く (15Hz)
-      const earAngle = Math.sin(t * 15) * 0.25;
+      // 喋っている時は耳が素早くパタパタ動く (通常15Hz / 大声24Hz)
+      const earAngle = Math.sin(t * (isOverdrive ? 24 : 15)) * (isOverdrive ? 0.4 : 0.25);
       if (rightEarRef.current) rightEarRef.current.rotation.x = -earAngle;
       if (leftEarRef.current) leftEarRef.current.rotation.x = -earAngle;
-      // 尻尾も嬉しそうに左右に振る
-      if (tailRef.current) tailRef.current.rotation.y = Math.sin(t * 12) * 0.2;
+
+      // ★ 尻尾: 通常は嬉しそうに左右フリフリ、大声時は【360度ドリルテール超高速スピン！】
+      if (tailRef.current) {
+        if (isOverdrive) {
+          tailRef.current.rotation.z = (t * 32) % (Math.PI * 2);
+          tailRef.current.rotation.y = 0;
+        } else {
+          tailRef.current.rotation.z = 0;
+          tailRef.current.rotation.y = Math.sin(t * 14) * 0.28;
+        }
+      }
     } else {
       // 待機時は定位置に戻す
       if (rightEarRef.current) rightEarRef.current.rotation.x = 0;
       if (leftEarRef.current) leftEarRef.current.rotation.x = 0;
-      if (tailRef.current) tailRef.current.rotation.y = 0;
+      if (tailRef.current) {
+        tailRef.current.rotation.x = 0;
+        tailRef.current.rotation.y = 0;
+        tailRef.current.rotation.z = 0;
+      }
     }
   });
 

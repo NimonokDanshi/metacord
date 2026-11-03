@@ -15,21 +15,32 @@ export function ChubbyChickModel({
   accentColor = '#f97316',    // くちばし・足先のオレンジ
   isSitting = false,
   isSpeaking = false,
+  voiceVolume = 0,
+  isShouting = false,
 }: AvatarModelProps) {
   const rightWingRef = useRef<THREE.Group>(null);
   const leftWingRef = useRef<THREE.Group>(null);
+  const ahogeRef = useRef<THREE.Group>(null);
+
+  const isOverdrive = isShouting || (isSpeaking && voiceVolume > 0.5);
 
   // 毎フレームのアニメーション処理 (60fps)
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     if (isSpeaking) {
-      // 喋っている時は羽を高速にパタパタ羽ばたかせる (18Hz)
-      const flap = Math.sin(t * 18) * 0.45;
+      // 喋っている時は羽を高速にパタパタ羽ばたかせる (通常18Hz / 大声26Hz)
+      const flap = Math.sin(t * (isOverdrive ? 26 : 18)) * (isOverdrive ? 0.7 : 0.45);
       if (rightWingRef.current) rightWingRef.current.rotation.z = flap;
       if (leftWingRef.current) leftWingRef.current.rotation.z = -flap;
+
+      // 頭のアホ毛もピコピコ激しく揺れる
+      if (ahogeRef.current) {
+        ahogeRef.current.rotation.z = Math.sin(t * (isOverdrive ? 28 : 16)) * (isOverdrive ? 0.4 : 0.2);
+      }
     } else {
       if (rightWingRef.current) rightWingRef.current.rotation.z = 0;
       if (leftWingRef.current) leftWingRef.current.rotation.z = 0;
+      if (ahogeRef.current) ahogeRef.current.rotation.z = 0;
     }
   });
 
@@ -47,8 +58,8 @@ export function ChubbyChickModel({
         <meshStandardMaterial color={skinColor} roughness={0.9} />
       </mesh>
 
-      {/* 頭のぴょこんとした羽 (Head Tuft / Ahoge) */}
-      <group position={[0, 0.52, 0.02]} rotation={[0.2, 0, 0]}>
+      {/* 頭のぴょこんとした羽 (Head Tuft / Ahoge - ピコピコ揺れる) */}
+      <group ref={ahogeRef} position={[0, 0.52, 0.02]} rotation={[0.2, 0, 0]}>
         <mesh castShadow position={[0, 0.04, 0]}>
           <boxGeometry args={[0.06, 0.1, 0.06]} />
           <meshStandardMaterial color={color} />

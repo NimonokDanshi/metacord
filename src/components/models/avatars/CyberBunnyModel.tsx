@@ -2,11 +2,13 @@ import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { AvatarModelProps } from '@/types/avatar';
+import { AvatarRarityEffects } from '@/components/models/avatars/common/AvatarRarityEffects';
 
 /**
  * CyberBunnyModel (Epic)
  * サイバーゴーグルとネオンイヤーを装備した近未来のウサギアバター
- * - 喋っている間 (isSpeaking = true) はゴーグルとネオンが高速明滅し、耳がピコピコ動きます
+ * - 喋っている間 (isSpeaking): ゴーグルとネオンが高速明滅し、耳がピコピコ動く ＆ 浮遊ネオン光粒子が旋回
+ * - 大声時 (isShouting): 【バイザーから前方に極太シアンレーザービーム大放射！】
  */
 export function CyberBunnyModel({
   color = '#1e1b4b',          // ダークインディゴのサイバージャケット
@@ -14,10 +16,15 @@ export function CyberBunnyModel({
   accentColor = '#00f0ff',    // ネオンシアンのバイザー・ライン
   isSitting = false,
   isSpeaking = false,
+  voiceVolume = 0,
+  isShouting = false,
 }: AvatarModelProps) {
   const rightEarRef = useRef<THREE.Group>(null);
   const leftEarRef = useRef<THREE.Group>(null);
   const visorMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const visorBeamRef = useRef<THREE.Mesh>(null);
+
+  const isOverdrive = isShouting || (isSpeaking && voiceVolume > 0.5);
 
   const earNeon = '#f43f5e'; // ネオンピンク
 
@@ -26,17 +33,31 @@ export function CyberBunnyModel({
     const t = state.clock.elapsedTime;
     if (isSpeaking) {
       // 耳のピコピコ動くアニメーション
-      const earWiggle = Math.sin(t * 16) * 0.2;
+      const earWiggle = Math.sin(t * (isOverdrive ? 24 : 16)) * (isOverdrive ? 0.35 : 0.2);
       if (rightEarRef.current) rightEarRef.current.rotation.x = -0.15 + earWiggle;
       if (leftEarRef.current) leftEarRef.current.rotation.x = -0.15 + earWiggle;
 
       // ゴーグルのサイバーパルス明滅
-      const pulse = (Math.sin(t * 18) * 0.5 + 0.5) * 2.2 + 1.2;
+      const pulse = isOverdrive
+        ? 6.0 + Math.sin(t * 30) * 2.5
+        : (Math.sin(t * 18) * 0.5 + 0.5) * 2.2 + 1.2;
       if (visorMatRef.current) visorMatRef.current.emissiveIntensity = pulse;
+
+      // ★ 大声時: バイザーから前方に極太シアンレーザービーム大照射！
+      if (visorBeamRef.current) {
+        if (isOverdrive) {
+          const beamLen = 2.5 + Math.sin(t * 30) * 0.4;
+          visorBeamRef.current.scale.set(1.4, 1.4, beamLen);
+          (visorBeamRef.current.material as THREE.MeshBasicMaterial).opacity = 0.9;
+        } else {
+          visorBeamRef.current.scale.set(0, 0, 0);
+        }
+      }
     } else {
       if (rightEarRef.current) rightEarRef.current.rotation.x = -0.15;
       if (leftEarRef.current) leftEarRef.current.rotation.x = -0.15;
       if (visorMatRef.current) visorMatRef.current.emissiveIntensity = 1.2;
+      if (visorBeamRef.current) visorBeamRef.current.scale.set(0, 0, 0);
     }
   });
 
@@ -86,6 +107,11 @@ export function CyberBunnyModel({
             emissive={earNeon}
             emissiveIntensity={isSpeaking ? 2.8 : 1.4}
           />
+        </mesh>
+        {/* ★ 大声時: バイザーブラスターレーザービーム！ */}
+        <mesh ref={visorBeamRef} position={[0, 0, 0.8]} scale={[0, 0, 0]}>
+          <boxGeometry args={[0.28, 0.08, 1.6]} />
+          <meshBasicMaterial color={accentColor} transparent opacity={0.9} />
         </mesh>
       </group>
 
@@ -210,6 +236,16 @@ export function CyberBunnyModel({
           </mesh>
         </group>
       )}
+
+      {/* レアリティ共通エフェクト (Epic: 浮遊ネオン光粒子キューブ ＆ ダイナミックライト) */}
+      <AvatarRarityEffects
+        rarity="epic"
+        isSpeaking={isSpeaking}
+        isSitting={isSitting}
+        voiceVolume={voiceVolume}
+        isShouting={isShouting}
+        accentColor={accentColor}
+      />
     </group>
   );
 }

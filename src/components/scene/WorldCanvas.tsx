@@ -32,7 +32,7 @@ export function WorldCanvas() {
   
   // Supabase/Presence の同期を開始
   useRoom();
-  const { occupants, leavingOccupants, isEditing, setEditing, furnitures } = useRoomStore();
+  const { occupants, leavingOccupants, isEditing, setEditing, furnitures, myFurnitureId, mySeatIndex } = useRoomStore();
   const { user, avatarType, mySet, voiceStates, addLogMessage } = useDiscordStore();
   const [isAvatarModalOpen, setIsAvatarModalOpen] = React.useState(false);
   const [isMySetModalOpen, setIsMySetModalOpen] = React.useState(false);
@@ -54,7 +54,9 @@ export function WorldCanvas() {
       const finalOccupant: SeatOccupant = isMe ? {
         ...occ,
         avatar_type: avatarType,
-        metadata: { myset: mySet }
+        metadata: { myset: mySet },
+        furniture_id: myFurnitureId !== null ? (myFurnitureId || undefined) : occ.furniture_id,
+        seat_index: mySeatIndex ?? occ.seat_index,
       } : occ;
 
       list.push({ occupant: finalOccupant, voiceState: vs, isLeaving: false });

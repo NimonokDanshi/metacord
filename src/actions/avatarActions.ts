@@ -6,6 +6,7 @@ import { useRoomStore } from '@/stores/roomStore';
 import { useDiscordStore } from '@/stores/discordStore';
 import { ROOM_ITEMS } from '@/constants/roomItems';
 import { HEIGHT_MEMBER_SITTING, HEIGHT_MEMBER_STANDING } from '@/constants/voxel';
+import { getAvatarMetadata } from '@/constants/avatarRegistry';
 import type { SeatOccupant } from '@/types/room';
 import type { VoiceState } from '@/types/discord';
 
@@ -180,11 +181,47 @@ export function useAvatarLogic(
       // 待機時の微呼吸
       targetY += Math.sin(state.clock.elapsedTime * 1.5) * 0.02;
 
-      // 喋っている時のジャンプモーション (大声時はさらに大きくバウンド)
+      // 喋っている時のモーション (レア度連動: Legendaryは空中浮遊、着席時はお尻が浮かないよう配慮)
       if (isSpeaking) {
-        const jumpAmp = isShouting ? 0.32 : 0.15;
-        targetY += Math.abs(Math.sin(state.clock.elapsedTime * (isShouting ? 18 : 10))) * jumpAmp;
-        groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * (isShouting ? 32 : 20)) * (isShouting ? 0.1 : 0.05);
+        const t = state.clock.elapsedTime;
+        const avatarMeta = getAvatarMetadata(occupant.avatar_type);
+        const rarity = avatarMeta?.rarity || 'common';
+        const isSitting = !!occupant.furniture_id;
+
+        if (rarity === 'legendary') {
+          // Legendary: 地面でピョンピョン跳ねず、神秘的な空中浮遊(ホバリング)
+          const hoverAmp = isShouting ? 0.08 : 0.04;
+          targetY += Math.sin(t * (isShouting ? 2.8 : 1.8)) * hoverAmp + (isSitting ? 0.02 : 0.06);
+          // 大声咆哮時のみ微細なバイブレーション
+          groupRef.current.rotation.z = isShouting ? Math.sin(t * 30) * 0.015 : 0;
+        } else if (rarity === 'epic') {
+          // Epic: スタイリッシュな浮遊＋軽やかなバウンド
+          if (isSitting) {
+            targetY += Math.sin(t * 8) * 0.02;
+          } else {
+            const amp = isShouting ? 0.08 : 0.04;
+            targetY += Math.abs(Math.sin(t * (isShouting ? 14 : 9))) * amp;
+          }
+          groupRef.current.rotation.z = Math.sin(t * 12) * (isShouting ? 0.03 : 0.015);
+        } else if (rarity === 'rare') {
+          // Rare: 愛らしいリズミカルなステップ
+          if (isSitting) {
+            targetY += Math.sin(t * 10) * 0.025;
+          } else {
+            const amp = isShouting ? 0.10 : 0.05;
+            targetY += Math.abs(Math.sin(t * (isShouting ? 16 : 10))) * amp;
+          }
+          groupRef.current.rotation.z = Math.sin(t * 14) * (isShouting ? 0.04 : 0.02);
+        } else {
+          // Common: 素朴で小さなステップ
+          if (isSitting) {
+            targetY += Math.sin(t * 12) * 0.015;
+          } else {
+            const amp = isShouting ? 0.06 : 0.03;
+            targetY += Math.abs(Math.sin(t * (isShouting ? 14 : 9))) * amp;
+          }
+          groupRef.current.rotation.z = Math.sin(t * 12) * (isShouting ? 0.03 : 0.015);
+        }
       } else {
         groupRef.current.rotation.z = 0;
       }

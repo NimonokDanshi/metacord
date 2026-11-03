@@ -17,10 +17,15 @@ export function GentlemanPenguinModel({
   accentColor = '#dc2626', // ルビーレッド（リボン & 蝶ネクタイ）
   isSitting = false,
   isSpeaking = false,
+  voiceVolume = 0,
+  isShouting = false,
 }: AvatarModelProps) {
   const beakRef = useRef<THREE.Group>(null);
   const caneArmRef = useRef<THREE.Group>(null);
   const leftFlipperRef = useRef<THREE.Group>(null);
+  const topHatRef = useRef<THREE.Group>(null);
+
+  const isOverdrive = isShouting || (isSpeaking && voiceVolume > 0.5);
 
   // ゴールドアクセント
   const goldColor = '#fbbf24';
@@ -31,22 +36,36 @@ export function GentlemanPenguinModel({
     const t = state.clock.elapsedTime;
 
     if (isSpeaking) {
-      // くちばしの開閉アニメーション (12Hz)
-      const beakOpen = (Math.sin(t * 14) * 0.5 + 0.5) * 0.04;
+      // くちばしの開閉アニメーション (14Hz)
+      const beakOpen = (Math.sin(t * (isOverdrive ? 24 : 14)) * 0.5 + 0.5) * (isOverdrive ? 0.07 : 0.04);
       if (beakRef.current) {
         beakRef.current.position.y = 0.52 - beakOpen;
       }
 
-      // ステッキを持った右手が小粋に傾く・リズムを取る
-      const caneTilt = Math.sin(t * 7) * 0.15;
+      // ステッキを持った右手が小粋に傾く・リズムを取る (大声時はトントン激しくタップ)
+      const caneSpeed = isOverdrive ? 18 : 7;
+      const caneTilt = Math.sin(t * caneSpeed) * (isOverdrive ? 0.35 : 0.15);
       if (caneArmRef.current) {
         caneArmRef.current.rotation.z = -0.1 + caneTilt;
-        caneArmRef.current.rotation.x = Math.cos(t * 7) * 0.08;
+        caneArmRef.current.rotation.x = Math.cos(t * caneSpeed) * (isOverdrive ? 0.2 : 0.08);
       }
 
       // 左羽の上品なパタパタ
       if (leftFlipperRef.current) {
-        leftFlipperRef.current.rotation.z = -0.15 - Math.sin(t * 10) * 0.12;
+        leftFlipperRef.current.rotation.z = -0.15 - Math.sin(t * (isOverdrive ? 20 : 10)) * (isOverdrive ? 0.35 : 0.12);
+      }
+
+      // ★ びっくりハット！大声時にシルクハットが上空へポンッと飛び跳ねてパカパカ浮く！
+      if (topHatRef.current) {
+        if (isOverdrive) {
+          const hatJump = Math.abs(Math.sin(t * 14)) * 0.18 + 0.06;
+          const hatTilt = Math.sin(t * 14) * 0.2;
+          topHatRef.current.position.y = 0.60 + hatJump;
+          topHatRef.current.rotation.z = -0.04 + hatTilt;
+        } else {
+          topHatRef.current.position.y = 0.60;
+          topHatRef.current.rotation.z = -0.04;
+        }
       }
     } else {
       if (beakRef.current) {
@@ -58,6 +77,10 @@ export function GentlemanPenguinModel({
       }
       if (leftFlipperRef.current) {
         leftFlipperRef.current.rotation.z = -0.15;
+      }
+      if (topHatRef.current) {
+        topHatRef.current.position.y = 0.60;
+        topHatRef.current.rotation.z = -0.04;
       }
     }
   });
@@ -156,8 +179,8 @@ export function GentlemanPenguinModel({
         </mesh>
       </group>
 
-      {/* シルクハット (Top Hat) */}
-      <group position={[0, 0.60, 0.02]} rotation={[-0.05, 0, -0.04]}>
+      {/* シルクハット (Top Hat) - 大声時に上空へ飛び跳ねる！ */}
+      <group ref={topHatRef} position={[0, 0.60, 0.02]} rotation={[-0.05, 0, -0.04]}>
         {/* つば (Brim) */}
         <mesh castShadow position={[0, 0, 0]}>
           <boxGeometry args={[0.44, 0.025, 0.40]} />

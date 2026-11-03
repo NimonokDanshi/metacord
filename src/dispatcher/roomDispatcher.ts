@@ -156,6 +156,23 @@ export function useRoom() {
         if (userId !== user.id) {
           addToast(`${displayName || 'メンバー'} が入室しました`, 'join');
         }
+      },
+      // --- Broadcast: 座席即時移動通知 ---
+      onSeatChange: ({ userId, seatIndex, furnitureId, mySet: incomingMySet, avatarType: incomingAvatar }: any) => {
+        console.log('[useRoom] Instant Seat Change Broadcast:', { userId, seatIndex, furnitureId });
+        const existing = useRoomStore.getState().occupants.get(userId);
+        if (existing) {
+          upsertOccupant({
+            ...existing,
+            seat_index: seatIndex,
+            furniture_id: furnitureId || undefined,
+            avatar_type: incomingAvatar || existing.avatar_type,
+            metadata: {
+              ...(existing.metadata || {}),
+              ...(incomingMySet ? { myset: incomingMySet } : {}),
+            },
+          });
+        }
       }
     };
 

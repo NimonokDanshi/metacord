@@ -21,6 +21,14 @@ export interface UserLifecyclePayload {
   avatarUrl?: string;
 }
 
+export interface SeatChangePayload {
+  userId: string;
+  seatIndex: number;
+  furnitureId?: string | null;
+  mySet?: any;
+  avatarType?: string;
+}
+
 export interface PresenceHandlers {
   onSync: PresenceCallback;
   onJoin: PresenceEventCallback;
@@ -29,6 +37,7 @@ export interface PresenceHandlers {
   onEmote?: (payload: EmotePayload) => void;
   onUserInstantLeave?: (payload: UserLifecyclePayload) => void;
   onUserInstantJoin?: (payload: UserLifecyclePayload) => void;
+  onSeatChange?: (payload: SeatChangePayload) => void;
 }
 
 /**
@@ -88,6 +97,11 @@ export class PresenceService {
       handlers.onUserInstantJoin?.(payload as UserLifecyclePayload);
     });
 
+    // --- Broadcast: 座席即時移動同期 ---
+    this.channel.on('broadcast', { event: 'seat_change' }, ({ payload }) => {
+      handlers.onSeatChange?.(payload as SeatChangePayload);
+    });
+
     return new Promise((resolve) => {
       this.channel!.subscribe((status) => {
         resolve(status);
@@ -128,6 +142,18 @@ export class PresenceService {
       type: 'broadcast',
       event: 'user_instant_join',
       payload: { userId: this.userId, displayName, avatarUrl } as UserLifecyclePayload,
+    }).catch(() => {});
+  }
+
+  /**
+   * 座席変更を即時ブロードキャストする (ミリ秒同期)
+   */
+  public async broadcastSeatChange(payload: Omit<SeatChangePayload, 'userId'>): Promise<void> {
+    if (!this.channel) return;
+    await this.channel.send({
+      type: 'broadcast',
+      event: 'seat_change',
+      payload: { ...payload, userId: this.userId } as SeatChangePayload,
     }).catch(() => {});
   }
 

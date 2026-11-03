@@ -164,36 +164,60 @@ export const roomActions = {
    * 座席を変更し、即座に同期します。
    */
   changeSeat: async (seatIndex: number, furnitureId: string | null = null) => {
-    const { user, mySet } = useDiscordStore.getState();
-    const { myFurnitureId: oldFurnitureId, setMySeatIndex, setMyFurnitureId } = useRoomStore.getState();
+    const { user, mySet, avatarType } = useDiscordStore.getState();
+    const { myFurnitureId: oldFurnitureId, setMySeatIndex, setMyFurnitureId, upsertOccupant, presenceService } = useRoomStore.getState();
     
     if (!user) return;
 
-    // 1. 自分の ID が紐付いている家具のメタデータを一旦すべてクリア (念のため)
-    if (supabase) {
-      await supabase
-        .from('t_server_furniture')
-        .update({ metadata: {} } as any)
-        .eq('metadata->>occupant_id', user.id);
-    }
-
-    // 2. ストアを更新
+    // 1. ストアを更新
     setMySeatIndex(seatIndex);
     setMyFurnitureId(furnitureId);
 
-    // 3. 新しい家具にメタデータをセット (占有情報とMySet)
-    if (furnitureId && supabase) {
-      await supabase
-        .from('t_server_furniture')
-        .update({ 
-          metadata: { 
-            occupant_id: user.id,
-            myset: mySet
-          } 
-        } as any)
-        .eq('id', furnitureId);
+    // 2. ローカルの自分自身 (occupants) を即座に更新 (ゼロ遅延プレビュー)
+    upsertOccupant({
+      user_id: user.id,
+      display_name: user.global_name ?? user.username,
+      avatar_url: getDiscordAvatarUrl(user),
+      seat_index: seatIndex,
+      furniture_id: furnitureId || undefined,
+      avatar_type: avatarType,
+      metadata: { myset: mySet },
+    });
+
+    // 3. 超低遅延 Broadcast 送信 (10〜50ms で全相手画面へ即座に座席＆MySetを同期！)
+    if (presenceService) {
+      presenceService.broadcastSeatChange({
+        seatIndex,
+        furnitureId,
+        mySet,
+        avatarType,
+      });
     }
 
+    // 4. DB の家具メタデータを更新 (非同期バックグラウンド)
+    if (supabase) {
+      // 以前の家具を解放
+      if (oldFurnitureId && oldFurnitureId !== furnitureId) {
+        supabase.from('t_server_furniture')
+          .update({ metadata: {} } as any)
+          .eq('id', oldFurnitureId)
+          .then();
+      }
+      // 新しい家具に着席者と MySet を登録
+      if (furnitureId) {
+        supabase.from('t_server_furniture')
+          .update({ 
+            metadata: { 
+              occupant_id: user.id,
+              myset: mySet
+            } 
+          } as any)
+          .eq('id', furnitureId)
+          .then();
+      }
+    }
+
+    // 5. Presence の正式ステートも追従同期
     await roomActions.syncPresence();
   },
 
